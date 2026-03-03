@@ -70,8 +70,7 @@ def generate():
     # 映射模板文件路径
     template_map = {
         'complaint': 'templates/complaint.docx',
-        'contract': 'templates/contract.docx',
-        'lawyer_letter': 'templates/lawyer_letter.docx'
+        'contract': 'templates/contract.docx'
     }
 
     if doc_type not in template_map:
@@ -99,11 +98,6 @@ def generate():
         data[
             'ai_generated_clauses'] = f"【AI智能起草正文】\n第一条 核心约定\n基于甲乙双方诉求（{reqs}），现约定如下...\n\n第二条 违约责任\n若任何一方违反本合同约定，应承担赔偿责任...\n\n第三条 争议解决\n本合同履行过程中发生的争议，提交人民法院诉讼解决。"
         output_name = f"{data.get('party_a', '甲方')}_{contract_name}.docx"
-
-    elif doc_type == 'lawyer_letter':
-        data[
-            'ai_generated_warning'] = f"经查，贵方擅自使用我方委托人{data.get('client', '未知')}的机密... 现要求贵方立即停止侵权。(大模型生成内容)"
-        output_name = f"{data.get('client', '委托人')}_律师函.docx"
 
     # 使用 docxtpl 渲染模板（自动将 data 里的键值对替换 Word 里的 {{ 变量名 }}）
     doc = DocxTemplate(tpl_path)

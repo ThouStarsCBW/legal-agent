@@ -78,7 +78,6 @@
                         <select v-model="docForm.doc_type" class="w-full border p-3 rounded bg-gray-50 focus:bg-white focus:outline-none focus:border-blue-500 text-lg">
                             <option value="contract">📝 通用合同智能起草</option>
                             <option value="complaint">⚖️ 民事起诉状</option>
-                            <option value="lawyer_letter">✉️ 律师函</option>
                         </select>
                     </div>
 
@@ -107,11 +106,6 @@
                         <div><label class="block mb-1 font-medium text-blue-800">原告姓名</label><input v-model="docForm.plaintiff" type="text" class="w-full border p-2 rounded"></div>
                         <div><label class="block mb-1 font-medium text-blue-800">被告姓名</label><input v-model="docForm.defendant" type="text" class="w-full border p-2 rounded"></div>
                         <div><label class="block mb-1 font-medium text-blue-800">诉讼请求提纲</label><textarea v-model="docForm.demand" placeholder="例如：请求判令被告偿还借款本金10万元及利息..." class="w-full border p-2 rounded h-24"></textarea></div>
-                    </div>
-
-                    <div v-if="docForm.doc_type === 'lawyer_letter'" class="space-y-4 p-5 border rounded-lg bg-yellow-50">
-                        <div><label class="block mb-1 font-medium text-yellow-800">委托人姓名/公司</label><input v-model="docForm.client" type="text" class="w-full border p-2 rounded"></div>
-                        <div><label class="block mb-1 font-medium text-yellow-800">致函对象（对方当事人）</label><input v-model="docForm.recipient" type="text" class="w-full border p-2 rounded"></div>
                     </div>
 
                     <button @click="generateDoc" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 w-full font-bold text-lg shadow-md transition duration-200">

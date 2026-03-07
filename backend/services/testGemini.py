@@ -2,7 +2,7 @@ import os
 from google import genai
 
 # 1. 显式定义 Key，确保没有奇怪的字符
-MY_API_KEY = "AIzaSyBJ0WIE0xOp71kQdBPwMq94LJ56zySS7Xo"
+MY_API_KEY = os.getenv("GEMINI_API_KEY")
 
 try:
     client = genai.Client(api_key=MY_API_KEY)

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 阿里云百炼API 配置
-API_KEY = os.environ.get("DASHSCOPE_API_KEY", "sk-sp-65873a7f37604fe888234582b8b8ee14")
+API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://coding.dashscope.aliyuncs.com/v1"
 DEFAULT_MODEL = "qwen3.5-plus"
 

@@ -615,6 +615,8 @@
                     chatInput.value = '';
                     isChatLoading.value = true;
 
+                    console.log('发送消息:', userMessage);
+
                     try {
                         const res = await fetch(`${baseUrl}/chat`, {
                             method: 'POST',
@@ -625,13 +627,16 @@
 
                         if(data.code === 200) {
                             chatHistory.value.push({ role: 'assistant', content: data.data.reply });
+                            console.log('收到回复，长度:', data.data.reply.length);
                         } else {
                             chatHistory.value.push({ role: 'assistant', content: '抱歉，服务暂时不可用，请稍后重试。' });
                         }
                     } catch(e) {
+                        console.error('聊天请求失败:', e);
                         chatHistory.value.push({ role: 'assistant', content: '网络连接异常，请检查后端服务是否正常运行。' });
                     } finally {
                         isChatLoading.value = false;
+                        console.log('请求完成，释放加载状态');
                     }
                 };
 

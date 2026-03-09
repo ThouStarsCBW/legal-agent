@@ -7,10 +7,20 @@ from services.rag_service import RAGService
 from services.legal_analysis_service import LegalAnalysisService
 from services.action_guide_service import ActionGuideService
 import time
+import logging
+from datetime import datetime
 
 app = Flask(__name__)
 # 允许跨域
 CORS(app)
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # 注册拆分出的文书撰写蓝图接口
 app.register_blueprint(doc_bp)
@@ -26,19 +36,34 @@ action_guide_service = ActionGuideService()
 # ==========================================
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    start_time = time.time()
+    logger.info("="*60)
+    logger.info(f"收到新的聊天请求")
+    
     data = request.json
     user_message = data.get('message', '')
     
+    logger.info(f"用户消息：{user_message[:50]}...")
+    
     if not user_message:
+        logger.warning("消息内容为空")
         return jsonify({"code": 400, "msg": "请输入问题内容"})
     
     try:
         # 第一步：意图识别与语义理解 (NLU)
+        nlu_start = time.time()
+        logger.info(">> 步骤 1: 开始 NLU 意图识别...")
         nlu_result = nlu_service.analyze_user_intent(user_message)
+        nlu_duration = time.time() - nlu_start
+        logger.info(f"✓ NLU 完成，耗时：{nlu_duration:.2f}秒")
         
         # 如果信息不完整，返回追问问题
         if not nlu_result['is_complete']:
             followup_questions = nlu_result['followup_questions']
+            logger.info(f"需要更多信息，追问问题：{followup_questions}")
+            total_duration = time.time() - start_time
+            logger.info(f"总耗时：{total_duration:.2f}秒")
+            logger.info("="*60)
             return jsonify({
                 "code": 200,
                 "data": {
@@ -49,26 +74,44 @@ def chat():
             })
         
         # 第二步：增强检索与知识对齐 (RAG)
+        rag_start = time.time()
+        logger.info(">> 步骤 2: 开始 RAG 知识检索...")
         legal_terminology = nlu_result['legal_terminology'].get('legal_terms', '')
+        logger.info(f"法律术语：{legal_terminology[:50] if legal_terminology else '无'}...")
         rag_result = rag_service.retrieve_knowledge(user_message, legal_terminology)
+        rag_duration = time.time() - rag_start
+        logger.info(f"✓ RAG 完成，耗时：{rag_duration:.2f}秒")
+        logger.info(f"  - 检索到法条：{len(rag_result['legal_articles'])}条")
+        logger.info(f"  - 检索到案例：{len(rag_result['similar_cases'])}个")
+        logger.info(f"  - 检索到司法解释：{len(rag_result['judicial_interpretations'])}个")
         
         # 第三步：逻辑推理与初步法律分析
+        analysis_start = time.time()
+        logger.info(">> 步骤 3: 开始法律分析...")
         legal_analysis = legal_analysis_service.perform_legal_analysis(
             user_message,
             nlu_result['extracted_elements'],
             rag_result['legal_articles'],
             rag_result['similar_cases']
         )
+        analysis_duration = time.time() - analysis_start
+        logger.info(f"✓ 法律分析完成，耗时：{analysis_duration:.2f}秒")
         
         # 第四步：辅助生成与行动指南
+        action_start = time.time()
+        logger.info(">> 步骤 4: 生成行动指南和文书...")
         action_package = action_guide_service.generate_action_package(
             user_message,
             nlu_result['extracted_elements'],
             legal_analysis,
             rag_result
         )
+        action_duration = time.time() - action_start
+        logger.info(f"✓ 行动指南生成完成，耗时：{action_duration:.2f}秒")
         
         # 生成最终回答
+        llm_start = time.time()
+        logger.info(">> 步骤 5: 调用大模型生成最终回答...")
         prompt = f"""你是一位专业且热心的中国法律顾问，服务对象是不太懂法律的普通老百姓。
 
 用户问题：{user_message}
@@ -111,10 +154,29 @@ def chat():
 - 每段末尾标注法条来源
 - 给出可操作的具体建议"""
         
+        logger.info(f"提示词长度：{len(prompt)}字符")
+        logger.info(">> 等待大模型生成完整回复...")
         response = generate_response(prompt)
+        llm_duration = time.time() - llm_start
+        logger.info(f"✓ 大模型回复生成完成，耗时：{llm_duration:.2f}秒")
+        logger.info(f"  - 回复长度：{len(response)}字符")
         
         # 添加引用溯源
+        tag_start = time.time()
         tagged_response = action_guide_service.add_source_tagging(response, rag_result)
+        tag_duration = time.time() - tag_start
+        logger.info(f"✓ 引用标注完成，耗时：{tag_duration:.2f}秒")
+        
+        total_duration = time.time() - start_time
+        logger.info(f"✓ 全部完成！总耗时：{total_duration:.2f}秒")
+        logger.info(f"各阶段耗时:")
+        logger.info(f"  - NLU: {nlu_duration:.2f}秒")
+        logger.info(f"  - RAG: {rag_duration:.2f}秒")
+        logger.info(f"  - 分析：{analysis_duration:.2f}秒")
+        logger.info(f"  - 文书生成：{action_duration:.2f}秒")
+        logger.info(f"  - 大模型：{llm_duration:.2f}秒")
+        logger.info(f"  - 引用标注：{tag_duration:.2f}秒")
+        logger.info("="*60)
         
         return jsonify({
             "code": 200,
@@ -129,6 +191,10 @@ def chat():
         })
         
     except Exception as e:
+        logger.error(f"处理请求时发生错误：{str(e)}", exc_info=True)
+        total_duration = time.time() - start_time
+        logger.info(f"错误发生在第{total_duration:.2f}秒")
+        logger.info("="*60)
         return jsonify({"code": 500, "msg": f"AI 服务异常，请稍后重试：{str(e)}"})
 
 @app.route('/api/search', methods=['GET'])

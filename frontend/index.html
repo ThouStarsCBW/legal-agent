@@ -2,114 +2,591 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>智慧法律助手原型</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧法律助手 - 专业法律咨询平台</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 font-sans">
-    <div id="app" class="flex h-screen">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #F5F0FA;
+            --bg-secondary: #EDE8F4;
+            --primary: #3D4B94;
+            --primary-dark: #2D3A7A;
+            --accent: #6B8EF8;
+            --accent-light: #8BA8FA;
+            --text-primary: #2D2B55;
+            --text-secondary: #5A5880;
+            --border: #D4CFE8;
+            --shadow: rgba(61, 75, 148, 0.1);
+        }
 
-        <div class="w-64 bg-white shadow-lg flex flex-col">
-            <div class="p-6 bg-blue-600 text-white text-xl font-bold">⚖️ 智慧法律系统</div>
+        * {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .font-serif {
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #F5F0FA 0%, #EDE8F4 100%);
+            color: var(--text-primary);
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #3D4B94 0%, #2D3A7A 100%);
+            box-shadow: 4px 0 20px rgba(61, 75, 148, 0.3);
+        }
+
+        .sidebar-btn {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-btn:hover {
+            background: rgba(107, 142, 248, 0.2);
+            border-left-color: #6B8EF8;
+        }
+
+        .sidebar-btn.active {
+            background: rgba(107, 142, 248, 0.3);
+            border-left-color: #6B8EF8;
+            color: #fff;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6B8EF8 0%, #3D4B94 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(107, 142, 248, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(107, 142, 248, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3D4B94 0%, #2D3A7A 100%);
+            transition: all 0.3s ease;
+        }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(107, 142, 248, 0.2);
+            outline: none;
+        }
+
+        .message-user {
+            background: linear-gradient(135deg, #6B8EF8 0%, #5A7DE8 100%);
+            color: white;
+            border-radius: 20px 20px 4px 20px;
+        }
+
+        .message-ai {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 20px 20px 20px 4px;
+        }
+
+        .legal-icon {
+            background: linear-gradient(135deg, rgba(107, 142, 248, 0.1) 0%, rgba(61, 75, 148, 0.1) 100%);
+            border: 1px solid rgba(107, 142, 248, 0.3);
+        }
+
+        .section-title {
+            background: linear-gradient(90deg, #3D4B94 0%, #6B8EF8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .divider-legal {
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #6B8EF8 50%, transparent 100%);
+        }
+
+        .scroll-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scroll-area::-webkit-scrollbar-track {
+            background: rgba(61, 75, 148, 0.05);
+            border-radius: 3px;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #6B8EF8 0%, #3D4B94 100%);
+            border-radius: 3px;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-left: 4px solid #6B8EF8;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(107, 142, 248, 0.2);
+        }
+
+        .loading-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <div id="app" class="flex h-full">
+        <!-- 侧边栏 -->
+        <div class="sidebar w-72 flex flex-col text-white">
+            <!-- Logo区域 -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-2xl shadow-lg">
+                        ⚖️
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold font-serif">智慧法律助手</h1>
+                        <p class="text-xs text-white/60">专业 · 严谨 · 高效</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导航菜单 -->
             <nav class="flex-1 p-4 space-y-2">
-                <button @click="currentTab = 'chat'" :class="{'bg-blue-100 text-blue-700': currentTab === 'chat'}" class="w-full text-left p-3 rounded font-medium">💬 法律问答</button>
-                <button @click="currentTab = 'search'" :class="{'bg-blue-100 text-blue-700': currentTab === 'search'}" class="w-full text-left p-3 rounded font-medium">🔍 知识库检索</button>
-                <button @click="currentTab = 'ocr'" :class="{'bg-blue-100 text-blue-700': currentTab === 'ocr'}" class="w-full text-left p-3 rounded font-medium">📄 文件识别审查</button>
-                <button @click="currentTab = 'doc'" :class="{'bg-blue-100 text-blue-700': currentTab === 'doc'}" class="w-full text-left p-3 rounded font-medium">✍️ AI文书自动撰写</button>
+                <button
+                    @click="currentTab = 'chat'"
+                    :class="{'active': currentTab === 'chat'}"
+                    class="sidebar-btn w-full text-left p-4 rounded-lg flex items-center gap-3"
+                >
+                    <span class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-lg">💬</span>
+                    <div>
+                        <div class="font-medium">法律问答</div>
+                        <div class="text-xs text-white/50">AI智能法律咨询</div>
+                    </div>
+                </button>
+
+                <button
+                    @click="currentTab = 'search'"
+                    :class="{'active': currentTab === 'search'}"
+                    class="sidebar-btn w-full text-left p-4 rounded-lg flex items-center gap-3"
+                >
+                    <span class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-lg">🔍</span>
+                    <div>
+                        <div class="font-medium">知识库检索</div>
+                        <div class="text-xs text-white/50">法条案例查询</div>
+                    </div>
+                </button>
+
+                <button
+                    @click="currentTab = 'ocr'"
+                    :class="{'active': currentTab === 'ocr'}"
+                    class="sidebar-btn w-full text-left p-4 rounded-lg flex items-center gap-3"
+                >
+                    <span class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-lg">📄</span>
+                    <div>
+                        <div class="font-medium">文件识别审查</div>
+                        <div class="text-xs text-white/50">智能风险分析</div>
+                    </div>
+                </button>
+
+                <button
+                    @click="currentTab = 'doc'"
+                    :class="{'active': currentTab === 'doc'}"
+                    class="sidebar-btn w-full text-left p-4 rounded-lg flex items-center gap-3"
+                >
+                    <span class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-lg">✍️</span>
+                    <div>
+                        <div class="font-medium">AI文书撰写</div>
+                        <div class="text-xs text-white/50">合同起诉状生成</div>
+                    </div>
+                </button>
             </nav>
+
+            <!-- 底部信息 -->
+            <div class="p-4 border-t border-white/10">
+                <div class="text-xs text-white/40 text-center">
+                    <p>© 2026 智慧法律助手</p>
+                    <p class="mt-1">本系统仅供参考，不构成正式法律意见</p>
+                </div>
+            </div>
         </div>
 
-        <div class="flex-1 p-8 overflow-y-auto">
-
-            <div v-if="currentTab === 'chat'" class="bg-white p-6 rounded-lg shadow h-full flex flex-col">
-                <h2 class="text-2xl font-bold mb-4">法律问答 (预留接入AI)</h2>
-                <div class="flex-1 bg-gray-50 rounded p-4 mb-4 overflow-y-auto">
-                    <div v-for="(msg, index) in chatHistory" :key="index" class="mb-4">
-                        <div :class="msg.role === 'user' ? 'text-blue-600 font-bold' : 'text-green-600 font-bold'">
-                            {{ msg.role === 'user' ? '🧑 用户：' : '🤖 AI：' }}
+        <!-- 主内容区 -->
+        <div class="flex-1 p-6 overflow-hidden">
+            <!-- 法律问答模块 -->
+            <div v-if="currentTab === 'chat'" class="card h-full rounded-2xl flex flex-col p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xl">
+                            💬
                         </div>
-                        <div class="mt-1 text-gray-700">{{ msg.content }}</div>
+                        <div>
+                            <h2 class="text-2xl font-bold section-title font-serif">法律问答</h2>
+                            <p class="text-sm text-[#5A5880]">AI驱动的智能法律咨询系统</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-[#6B8EF8]/10 border border-[#6B8EF8]/30">
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span class="text-sm text-[#3D4B94] font-medium">AI服务正常</span>
                     </div>
                 </div>
-                <div class="flex gap-2">
-                    <input v-model="chatInput" @keyup.enter="sendChat" type="text" placeholder="输入法律问题..." class="flex-1 border p-2 rounded">
-                    <button @click="sendChat" class="bg-blue-600 text-white px-6 py-2 rounded">发送</button>
+
+                <div class="divider-legal mb-6"></div>
+
+                <!-- 聊天区域 -->
+                <div class="flex-1 bg-gradient-to-b from-[#F5F0FA] to-white rounded-xl p-4 overflow-y-auto scroll-area mb-4 border border-[#D4CFE8]">
+                    <div v-if="chatHistory.length === 0" class="h-full flex flex-col items-center justify-center text-[#5A5880]">
+                        <div class="w-24 h-24 rounded-full legal-icon flex items-center justify-center text-4xl mb-4">
+                            ⚖️
+                        </div>
+                        <p class="text-lg font-medium mb-2">欢迎使用智慧法律助手</p>
+                        <p class="text-sm">请输入您的法律问题，AI将为您提供专业解答</p>
+                        <div class="mt-6 flex gap-3">
+                            <span class="px-3 py-1 rounded-full bg-[#6B8EF8]/10 text-xs text-[#3D4B94] cursor-pointer hover:bg-[#6B8EF8]/20 transition">房东不退押金</span>
+                            <span class="px-3 py-1 rounded-full bg-[#6B8EF8]/10 text-xs text-[#3D4B94] cursor-pointer hover:bg-[#6B8EF8]/20 transition">公司不签合同</span>
+                            <span class="px-3 py-1 rounded-full bg-[#6B8EF8]/10 text-xs text-[#3D4B94] cursor-pointer hover:bg-[#6B8EF8]/20 transition">借钱不还</span>
+                        </div>
+                    </div>
+
+                    <div v-for="(msg, index) in chatHistory" :key="index" class="mb-6">
+                        <!-- 用户消息 -->
+                        <div v-if="msg.role === 'user'" class="flex justify-end mb-4">
+                            <div class="max-w-[70%] message-user px-5 py-3 shadow-lg">
+                                <div class="flex items-center gap-2 mb-1 opacity-90">
+                                    <span class="text-sm font-medium">您</span>
+                                </div>
+                                <div class="text-sm leading-relaxed">{{ msg.content }}</div>
+                            </div>
+                        </div>
+
+                        <!-- AI消息 -->
+                        <div v-else class="flex justify-start mb-4">
+                            <div class="max-w-[80%] message-ai px-5 py-4 shadow-md">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xs">
+                                        AI
+                                    </div>
+                                    <span class="text-sm font-medium text-[#3D4B94]">法律顾问</span>
+                                </div>
+                                <div class="text-sm text-[#2D2B55] leading-relaxed whitespace-pre-wrap">{{ msg.content }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 加载状态 -->
+                    <div v-if="isChatLoading" class="flex justify-start">
+                        <div class="message-ai px-5 py-3 flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xs">
+                                AI
+                            </div>
+                            <div class="flex gap-1">
+                                <div class="w-2 h-2 rounded-full bg-[#6B8EF8] loading-pulse"></div>
+                                <div class="w-2 h-2 rounded-full bg-[#6B8EF8] loading-pulse" style="animation-delay: 0.2s"></div>
+                                <div class="w-2 h-2 rounded-full bg-[#6B8EF8] loading-pulse" style="animation-delay: 0.4s"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 输入区域 -->
+                <div class="flex gap-3">
+                    <input
+                        v-model="chatInput"
+                        @keyup.enter="sendChat"
+                        type="text"
+                        placeholder="请输入您的法律问题..."
+                        class="flex-1 input-field px-5 py-4 rounded-xl text-[#2D2B55] placeholder-[#5A5880]/50"
+                        :disabled="isChatLoading"
+                    >
+                    <button
+                        @click="sendChat"
+                        class="btn-primary px-8 py-4 rounded-xl text-white font-medium flex items-center gap-2"
+                        :disabled="isChatLoading || !chatInput.trim()"
+                    >
+                        <span>发送</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
-            <div v-if="currentTab === 'search'" class="bg-white p-6 rounded-lg shadow h-full">
-                <h2 class="text-2xl font-bold mb-4">知识库检索</h2>
-                <div class="flex gap-2 mb-6">
-                    <input v-model="searchKeyword" @keyup.enter="doSearch" type="text" placeholder="输入关键词..." class="flex-1 border p-2 rounded">
-                    <button @click="doSearch" class="bg-blue-600 text-white px-6 py-2 rounded">检索</button>
+            <!-- 知识库检索模块 -->
+            <div v-if="currentTab === 'search'" class="card h-full rounded-2xl flex flex-col p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xl">
+                        🔍
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold section-title font-serif">知识库检索</h2>
+                        <p class="text-sm text-[#5A5880]">精准定位法律法规与裁判案例</p>
+                    </div>
                 </div>
-                <div v-if="searchResults.length > 0" class="space-y-4">
-                    <div v-for="(res, index) in searchResults" :key="index" class="p-4 border border-l-4 border-l-blue-500 rounded bg-gray-50">
-                        <h3 class="font-bold text-lg text-gray-800">{{ res.title }}</h3>
-                        <p class="text-gray-600 mt-2">{{ res.content }}</p>
+
+                <div class="divider-legal mb-6"></div>
+
+                <div class="flex gap-3 mb-6">
+                    <div class="flex-1 relative">
+                        <input
+                            v-model="searchKeyword"
+                            @keyup.enter="doSearch"
+                            type="text"
+                            placeholder="输入关键词检索法条、案例..."
+                            class="w-full input-field pl-12 pr-5 py-4 rounded-xl text-[#2D2B55] placeholder-[#5A5880]/50"
+                        >
+                        <svg class="w-5 h-5 text-[#5A5880] absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <button
+                        @click="doSearch"
+                        class="btn-primary px-8 py-4 rounded-xl text-white font-medium"
+                    >
+                        检索
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto scroll-area">
+                    <div v-if="searchResults.length === 0" class="h-full flex flex-col items-center justify-center text-[#5A5880]">
+                        <div class="w-20 h-20 rounded-full legal-icon flex items-center justify-center text-3xl mb-4">
+                            📚
+                        </div>
+                        <p class="text-lg font-medium">请输入关键词开始检索</p>
+                        <p class="text-sm mt-2">支持检索法律法规、司法解释、裁判文书</p>
+                    </div>
+
+                    <div v-else class="space-y-4">
+                        <div v-for="(res, index) in searchResults" :key="index" class="result-card p-5 rounded-xl">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-sm flex-shrink-0">
+                                    {{ index + 1 }}
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg text-[#3D4B94] mb-2">{{ res.title }}</h3>
+                                    <p class="text-[#5A5880] text-sm leading-relaxed">{{ res.content }}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div v-if="currentTab === 'ocr'" class="bg-white p-6 rounded-lg shadow h-full">
-                <h2 class="text-2xl font-bold mb-4">智能文件审查</h2>
-                <input type="file" @change="handleFileUpload" class="mb-4 block">
-                <button @click="doOcr" class="bg-blue-600 text-white px-4 py-2 rounded mb-6">上传并分析</button>
-                <div v-if="ocrResult" class="grid grid-cols-2 gap-4">
-                    <div class="bg-gray-50 p-4 rounded border"><h3 class="font-bold">📝 提取原文</h3><pre class="whitespace-pre-wrap text-sm">{{ ocrResult.text }}</pre></div>
-                    <div class="bg-red-50 p-4 rounded border"><h3 class="font-bold text-red-700">⚠️ AI风险审查</h3><p class="text-red-600">{{ ocrResult.risk }}</p></div>
+            <!-- 文件识别审查模块 -->
+            <div v-if="currentTab === 'ocr'" class="card h-full rounded-2xl flex flex-col p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xl">
+                        📄
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold section-title font-serif">智能文件审查</h2>
+                        <p class="text-sm text-[#5A5880]">AI识别文档内容并分析法律风险</p>
+                    </div>
+                </div>
+
+                <div class="divider-legal mb-6"></div>
+
+                <div class="mb-6">
+                    <div class="border-2 border-dashed border-[#D4CFE8] rounded-xl p-8 text-center hover:border-[#6B8EF8] transition-colors cursor-pointer" @click="$refs.fileInput.click()">
+                        <input type="file" ref="fileInput" @change="handleFileUpload" class="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <div class="w-16 h-16 rounded-full legal-icon flex items-center justify-center text-3xl mx-auto mb-4">
+                            📤
+                        </div>
+                        <p class="text-lg font-medium text-[#3D4B94] mb-2">点击或拖拽上传文件</p>
+                        <p class="text-sm text-[#5A5880]">支持 PDF、Word、图片格式</p>
+                        <p v-if="selectedFile" class="mt-4 text-sm text-[#6B8EF8] font-medium">
+                            已选择：{{ selectedFile.name }}
+                        </p>
+                    </div>
+                    <button
+                        @click="doOcr"
+                        class="btn-primary w-full mt-4 py-4 rounded-xl text-white font-medium"
+                        :disabled="!selectedFile"
+                    >
+                        开始智能分析
+                    </button>
+                </div>
+
+                <div v-if="ocrResult" class="flex-1 grid grid-cols-2 gap-4 overflow-y-auto">
+                    <div class="bg-gradient-to-b from-[#F5F0FA] to-white p-5 rounded-xl border border-[#D4CFE8]">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-[#6B8EF8]/10 flex items-center justify-center text-[#6B8EF8]">📝</div>
+                            <h3 class="font-bold text-[#3D4B94]">提取原文</h3>
+                        </div>
+                        <pre class="whitespace-pre-wrap text-sm text-[#2D2B55] leading-relaxed bg-white/50 p-4 rounded-lg">{{ ocrResult.text }}</pre>
+                    </div>
+                    <div class="bg-gradient-to-b from-red-50 to-white p-5 rounded-xl border border-red-200">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">⚠️</div>
+                            <h3 class="font-bold text-red-700">AI风险审查</h3>
+                        </div>
+                        <p class="text-red-600 text-sm leading-relaxed bg-white/50 p-4 rounded-lg">{{ ocrResult.risk }}</p>
+                    </div>
                 </div>
             </div>
 
-            <div v-if="currentTab === 'doc'" class="bg-white p-6 rounded-lg shadow h-full">
-                <h2 class="text-2xl font-bold mb-6">AI 文书与合同智能起草</h2>
+            <!-- AI文书撰写模块 -->
+            <div v-if="currentTab === 'doc'" class="card h-full rounded-2xl flex flex-col p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xl">
+                        ✍️
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold section-title font-serif">AI 文书与合同智能起草</h2>
+                        <p class="text-sm text-[#5A5880]">专业法律文书一键生成</p>
+                    </div>
+                </div>
 
-                <div class="flex gap-8 h-[calc(100%-4rem)]">
-                    <div class="flex-1 space-y-4 pr-6 border-r flex flex-col">
-                        <label class="block font-bold text-gray-700">第一步：选择文书并填写大纲</label>
-                        <select v-model="docForm.doc_type" @change="resetAiText" class="w-full border p-3 rounded bg-gray-50 outline-none focus:border-blue-500">
-                            <option value="contract">📝 通用合同智能撰写</option>
-                            <option value="complaint">⚖️ 民事起诉状撰写</option>
-                        </select>
+                <div class="divider-legal mb-6"></div>
 
-                        <div v-if="docForm.doc_type === 'contract'" class="space-y-3 flex-1 flex flex-col">
-                            <div><label class="block text-sm text-gray-600">合同名称</label><input v-model="docForm.contract_name" class="w-full border p-2 rounded"></div>
-                            <div class="flex gap-2">
-                                <div class="flex-1"><label class="text-sm text-gray-600">甲方</label><input v-model="docForm.party_a" class="w-full border p-2 rounded"></div>
-                                <div class="flex-1"><label class="text-sm text-gray-600">乙方</label><input v-model="docForm.party_b" class="w-full border p-2 rounded"></div>
+                <div class="flex gap-6 h-[calc(100%-8rem)]">
+                    <!-- 左侧：信息填写 -->
+                    <div class="flex-1 flex flex-col pr-6 border-r border-[#D4CFE8]">
+                        <div class="mb-4">
+                            <label class="block font-bold text-[#3D4B94] mb-3 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-full bg-[#6B8EF8] text-white text-xs flex items-center justify-center">1</span>
+                                选择文书类型
+                            </label>
+                            <select
+                                v-model="docForm.doc_type"
+                                @change="resetAiText"
+                                class="w-full input-field p-4 rounded-xl bg-white"
+                            >
+                                <option value="contract">📝 通用合同智能撰写</option>
+                                <option value="complaint">⚖️ 民事起诉状撰写</option>
+                            </select>
+                        </div>
+
+                        <div v-if="docForm.doc_type === 'contract'" class="flex-1 flex flex-col space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-[#5A5880] mb-2">合同名称</label>
+                                <input v-model="docForm.contract_name" class="w-full input-field p-3 rounded-lg" placeholder="例如：房屋租赁合同">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-[#5A5880] mb-2">甲方</label>
+                                    <input v-model="docForm.party_a" class="w-full input-field p-3 rounded-lg" placeholder="甲方名称">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-[#5A5880] mb-2">乙方</label>
+                                    <input v-model="docForm.party_b" class="w-full input-field p-3 rounded-lg" placeholder="乙方名称">
+                                </div>
                             </div>
                             <div class="flex-1 flex flex-col">
-                                <label class="text-sm font-bold text-gray-600">核心交易条件与业务诉求 (告诉AI合同里必须包含什么)</label>
-                                <textarea v-model="docForm.requirements" placeholder="请用大白话描述..." class="w-full flex-1 border p-2 rounded resize-none"></textarea>
+                                <label class="block text-sm font-medium text-[#5A5880] mb-2">核心交易条件与业务诉求</label>
+                                <textarea
+                                    v-model="docForm.requirements"
+                                    placeholder="请用大白话描述合同需要包含的内容..."
+                                    class="w-full flex-1 input-field p-4 rounded-lg resize-none"
+                                ></textarea>
                             </div>
                         </div>
 
-                        <div v-if="docForm.doc_type === 'complaint'" class="space-y-3 flex-1 flex flex-col">
-                            <div><label class="text-sm text-gray-600">原告姓名</label><input v-model="docForm.plaintiff" class="w-full border p-2 rounded"></div>
-                            <div><label class="text-sm text-gray-600">被告姓名</label><input v-model="docForm.defendant" class="w-full border p-2 rounded"></div>
+                        <div v-if="docForm.doc_type === 'complaint'" class="flex-1 flex flex-col space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-[#5A5880] mb-2">原告姓名</label>
+                                    <input v-model="docForm.plaintiff" class="w-full input-field p-3 rounded-lg" placeholder="原告姓名">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-[#5A5880] mb-2">被告姓名</label>
+                                    <input v-model="docForm.defendant" class="w-full input-field p-3 rounded-lg" placeholder="被告姓名">
+                                </div>
+                            </div>
                             <div class="flex-1 flex flex-col">
-                                <label class="text-sm font-bold text-gray-600">诉讼请求提纲 (简单描述诉求即可)</label>
-                                <textarea v-model="docForm.demand" placeholder="例如：要求被告退还押金5000元..." class="w-full flex-1 border p-2 rounded resize-none"></textarea>
+                                <label class="block text-sm font-medium text-[#5A5880] mb-2">诉讼请求提纲</label>
+                                <textarea
+                                    v-model="docForm.demand"
+                                    placeholder="例如：要求被告退还押金5000元并支付违约金..."
+                                    class="w-full flex-1 input-field p-4 rounded-lg resize-none"
+                                ></textarea>
                             </div>
                         </div>
 
-                        <button @click="draftText" :disabled="isGenerating" class="bg-blue-600 text-white py-3 rounded hover:bg-blue-700 font-bold shadow disabled:bg-gray-400 transition-all">
-                            {{ isGenerating ? '🤖 正在向大模型请求撰写...' : '✨ 一键生成条款正文 ➡️' }}
+                        <button
+                            @click="draftText"
+                            :disabled="isGenerating"
+                            class="btn-primary w-full py-4 rounded-xl text-white font-bold flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+                        >
+                            <span v-if="isGenerating" class="flex items-center gap-2">
+                                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                正在向大模型请求撰写...
+                            </span>
+                            <span v-else class="flex items-center gap-2">
+                                <span>✨</span>
+                                <span>一键生成条款正文</span>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                </svg>
+                            </span>
                         </button>
                     </div>
 
+                    <!-- 右侧：预览与导出 -->
                     <div class="flex-1 flex flex-col">
-                        <label class="block mb-2 font-bold text-gray-700">第二步：预览修改与导出文档</label>
+                        <label class="block font-bold text-[#3D4B94] mb-3 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-[#6B8EF8] text-white text-xs flex items-center justify-center">2</span>
+                            预览修改与导出文档
+                        </label>
 
-                        <div v-if="docForm.ai_text === null" class="flex-1 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400 bg-gray-50">
-                            请在左侧填写信息并点击一键生成
+                        <div v-if="docForm.ai_text === null" class="flex-1 border-2 border-dashed border-[#D4CFE8] rounded-xl flex items-center justify-center text-[#5A5880] bg-gradient-to-b from-[#F5F0FA]/50 to-white">
+                            <div class="text-center">
+                                <div class="w-16 h-16 rounded-full legal-icon flex items-center justify-center text-3xl mx-auto mb-4">
+                                    📝
+                                </div>
+                                <p class="text-lg font-medium">请在左侧填写信息</p>
+                                <p class="text-sm mt-2">点击"一键生成"获取AI撰写的文书</p>
+                            </div>
                         </div>
 
                         <div v-else class="flex-1 flex flex-col space-y-4">
-                            <textarea v-model="docForm.ai_text" class="w-full flex-1 border-2 border-blue-300 p-4 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 leading-relaxed resize-none"></textarea>
+                            <textarea
+                                v-model="docForm.ai_text"
+                                class="w-full flex-1 input-field p-5 rounded-xl text-[#2D2B55] leading-relaxed resize-none font-serif"
+                            ></textarea>
 
-                            <button @click="exportWord" class="bg-green-600 text-white py-3 rounded hover:bg-green-700 font-bold shadow text-lg flex justify-center items-center gap-2">
-                                📥 内容无误，导出 Word 文档
+                            <button
+                                @click="exportWord"
+                                class="w-full py-4 rounded-xl text-white font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <span>内容无误，导出 Word 文档</span>
                             </button>
                         </div>
                     </div>
@@ -124,24 +601,41 @@
         createApp({
             setup() {
                 const baseUrl = 'http://127.0.0.1:5000/api';
-                const currentTab = ref('doc');
+                const currentTab = ref('chat');
+                const isChatLoading = ref(false);
 
-                // 模块 1-3 的交互逻辑完全保持不变
+                // 法律问答模块
                 const chatInput = ref('');
                 const chatHistory = ref([]);
                 const sendChat = async () => {
-                    if(!chatInput.value) return;
-                    chatHistory.value.push({ role: 'user', content: chatInput.value });
-                    const msg = chatInput.value;
-                    chatInput.value = '思考中...';
+                    if(!chatInput.value.trim() || isChatLoading.value) return;
+
+                    const userMessage = chatInput.value;
+                    chatHistory.value.push({ role: 'user', content: userMessage });
+                    chatInput.value = '';
+                    isChatLoading.value = true;
+
                     try {
-                        const res = await fetch(`${baseUrl}/chat`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: msg }) });
+                        const res = await fetch(`${baseUrl}/chat`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ message: userMessage })
+                        });
                         const data = await res.json();
-                        chatInput.value = '';
-                        chatHistory.value.push({ role: 'assistant', content: data.data.reply });
-                    } catch(e) { chatInput.value = ''; }
+
+                        if(data.code === 200) {
+                            chatHistory.value.push({ role: 'assistant', content: data.data.reply });
+                        } else {
+                            chatHistory.value.push({ role: 'assistant', content: '抱歉，服务暂时不可用，请稍后重试。' });
+                        }
+                    } catch(e) {
+                        chatHistory.value.push({ role: 'assistant', content: '网络连接异常，请检查后端服务是否正常运行。' });
+                    } finally {
+                        isChatLoading.value = false;
+                    }
                 };
 
+                // 知识库检索模块
                 const searchKeyword = ref('');
                 const searchResults = ref([]);
                 const doSearch = async () => {
@@ -151,9 +645,12 @@
                     searchResults.value = data.data.results;
                 };
 
+                // 文件识别审查模块
                 const selectedFile = ref(null);
                 const ocrResult = ref(null);
-                const handleFileUpload = (event) => { selectedFile.value = event.target.files[0]; };
+                const handleFileUpload = (event) => {
+                    selectedFile.value = event.target.files[0];
+                };
                 const doOcr = async () => {
                     if(!selectedFile.value) return;
                     const formData = new FormData();
@@ -163,7 +660,7 @@
                     ocrResult.value = data.data;
                 };
 
-                // 模块 4 全新逻辑
+                // AI文书撰写模块
                 const isGenerating = ref(false);
                 const docForm = reactive({
                     doc_type: 'contract',
@@ -174,10 +671,15 @@
 
                 const resetAiText = () => { docForm.ai_text = null; };
 
-                // 触发后端 Gemini 服务撰写正文
                 const draftText = async () => {
-                    if (docForm.doc_type === 'complaint' && (!docForm.plaintiff || !docForm.demand)) return alert("请填写原告和诉讼请求提纲");
-                    if (docForm.doc_type === 'contract' && (!docForm.contract_name || !docForm.requirements)) return alert("请填写合同名称和诉求");
+                    if (docForm.doc_type === 'complaint' && (!docForm.plaintiff || !docForm.demand)) {
+                        alert("请填写原告和诉讼请求提纲");
+                        return;
+                    }
+                    if (docForm.doc_type === 'contract' && (!docForm.contract_name || !docForm.requirements)) {
+                        alert("请填写合同名称和诉求");
+                        return;
+                    }
 
                     isGenerating.value = true;
                     try {
@@ -187,8 +689,11 @@
                             body: JSON.stringify(docForm)
                         });
                         const resData = await res.json();
-                        if(resData.code === 200) docForm.ai_text = resData.data.text;
-                        else alert(resData.msg);
+                        if(resData.code === 200) {
+                            docForm.ai_text = resData.data.text;
+                        } else {
+                            alert(resData.msg);
+                        }
                     } catch(e) {
                         alert("请求大模型失败，请检查后端运行状态和 API_KEY 是否配置正确。");
                     } finally {
@@ -196,7 +701,6 @@
                     }
                 };
 
-                // 将用户修改确认后的正文发给后端，渲染 Word 模板并下载
                 const exportWord = async () => {
                     try {
                         const res = await fetch(`${baseUrl}/export_word`, {
@@ -229,7 +733,25 @@
                     }
                 };
 
-                return { currentTab, chatInput, chatHistory, sendChat, searchKeyword, searchResults, doSearch, handleFileUpload, doOcr, ocrResult, docForm, isGenerating, resetAiText, draftText, exportWord }
+                return {
+                    currentTab,
+                    isChatLoading,
+                    chatInput,
+                    chatHistory,
+                    sendChat,
+                    searchKeyword,
+                    searchResults,
+                    doSearch,
+                    selectedFile,
+                    handleFileUpload,
+                    doOcr,
+                    ocrResult,
+                    docForm,
+                    isGenerating,
+                    resetAiText,
+                    draftText,
+                    exportWord
+                }
             }
         }).mount('#app')
     </script>

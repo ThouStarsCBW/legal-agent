@@ -6,6 +6,7 @@ from services.nlu_service import NLUService
 from services.rag_service import RAGService
 from services.legal_analysis_service import LegalAnalysisService
 from services.action_guide_service import ActionGuideService
+from knowledge_base import knowledge_base
 import time
 import logging
 from datetime import datetime
@@ -42,8 +43,10 @@ def chat():
     
     data = request.json
     user_message = data.get('message', '')
+    conversation_id = data.get('conversation_id', None)  # 获取会话 ID
     
     logger.info(f"用户消息：{user_message[:50]}...")
+    logger.info(f"会话 ID: {conversation_id}")
     
     if not user_message:
         logger.warning("消息内容为空")
@@ -53,9 +56,14 @@ def chat():
         # 第一步：意图识别与语义理解 (NLU)
         nlu_start = time.time()
         logger.info(">> 步骤 1: 开始 NLU 意图识别...")
-        nlu_result = nlu_service.analyze_user_intent(user_message)
+        nlu_result = nlu_service.analyze_user_intent(user_message, conversation_id)
         nlu_duration = time.time() - nlu_start
         logger.info(f"✓ NLU 完成，耗时：{nlu_duration:.2f}秒")
+        logger.info(f"  - 追问计数：{nlu_result.get('followup_count', 0)}/{nlu_service.max_followup_rounds}")
+        if nlu_result.get('direct_answer_requested'):
+            logger.info("  - 用户要求直接回答")
+        if nlu_result.get('max_followup_reached'):
+            logger.info("  - 已达到最大追问次数，强制进入回答流程")
         
         # 如果信息不完整，返回追问问题
         if not nlu_result['is_complete']:
@@ -69,7 +77,10 @@ def chat():
                 "data": {
                     "reply": f"为了更好地帮助您，我需要了解一些详细信息：\n\n" + "\n".join([f"• {q}" for q in followup_questions]),
                     "followup_questions": followup_questions,
-                    "need_more_info": True
+                    "need_more_info": True,
+                    "conversation_id": conversation_id,  # 返回会话 ID 用于前端保存
+                    "followup_count": nlu_result.get('followup_count', 0),
+                    "max_followup_reached": nlu_result.get('max_followup_reached', False)
                 }
             })
         
@@ -186,7 +197,8 @@ def chat():
                 "rag_result": rag_result,
                 "legal_analysis": legal_analysis,
                 "action_package": action_package,
-                "need_more_info": False
+                "need_more_info": False,
+                "conversation_id": conversation_id  # 返回会话 ID
             }
         })
         
@@ -199,13 +211,101 @@ def chat():
 
 @app.route('/api/search', methods=['GET'])
 def search():
+    """搜索法律文档"""
     keyword = request.args.get('keyword', '')
-    time.sleep(0.5)
-    mock_results = [
-        {"title": f"与“{keyword}”相关的法条参考", "content": "这是模拟返回的权威法条内容..."},
-        {"title": f"相关案例参考", "content": "这是模拟返回的得理数据库案例..."}
-    ]
-    return jsonify({"code": 200, "data": {"results": mock_results}})
+    category = request.args.get('category', '')
+    
+    if not keyword:
+        return jsonify({"code": 400, "msg": "请输入搜索关键词"})
+    
+    try:
+        results = knowledge_base.search(keyword, category if category else None)
+        return jsonify({
+            "code": 200, 
+            "data": {
+                "results": results,
+                "total": len(results),
+                "keyword": keyword
+            }
+        })
+    except Exception as e:
+        return jsonify({"code": 500, "msg": f"搜索失败：{str(e)}"})
+
+@app.route('/api/kb/stats', methods=['GET'])
+def get_kb_stats():
+    """获取知识库统计信息"""
+    try:
+        stats = knowledge_base.get_stats()
+        return jsonify({
+            "code": 200,
+            "data": stats
+        })
+    except Exception as e:
+        return jsonify({"code": 500, "msg": f"获取统计失败：{str(e)}"})
+
+@app.route('/api/kb/category/<category>', methods=['GET'])
+def get_by_category(category):
+    """按分类获取文档"""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        results = knowledge_base.get_by_category(category, limit)
+        return jsonify({
+            "code": 200,
+            "data": {
+                "results": results,
+                "category": category,
+                "total": len(results)
+            }
+        })
+    except Exception as e:
+        return jsonify({"code": 500, "msg": f"获取失败：{str(e)}"})
+
+@app.route('/api/kb/latest', methods=['GET'])
+def get_latest():
+    """获取最新文档"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        results = knowledge_base.get_latest_documents(limit)
+        return jsonify({
+            "code": 200,
+            "data": {
+                "results": results,
+                "total": len(results)
+            }
+        })
+    except Exception as e:
+        return jsonify({"code": 500, "msg": f"获取失败：{str(e)}"})
+
+@app.route('/api/kb/hot', methods=['GET'])
+def get_hot():
+    """获取热门文档"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        results = knowledge_base.get_hot_documents(limit)
+        return jsonify({
+            "code": 200,
+            "data": {
+                "results": results,
+                "total": len(results)
+            }
+        })
+    except Exception as e:
+        return jsonify({"code": 500, "msg": f"获取失败：{str(e)}"})
+
+@app.route('/api/kb/document/<int:doc_id>', methods=['GET'])
+def get_document(doc_id):
+    """获取单个文档详情"""
+    try:
+        doc = knowledge_base.get_document(doc_id)
+        if doc:
+            return jsonify({
+                "code": 200,
+                "data": doc
+            })
+        else:
+            return jsonify({"code": 404, "msg": "文档不存在"})
+    except Exception as e:
+        return jsonify({"code": 500, "msg": f"获取失败：{str(e)}"})
 
 @app.route('/api/ocr', methods=['POST'])
 def ocr():

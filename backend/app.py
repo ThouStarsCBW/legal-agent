@@ -245,16 +245,20 @@ def get_kb_stats():
 
 @app.route('/api/kb/category/<category>', methods=['GET'])
 def get_by_category(category):
-    """按分类获取文档"""
+    """按分类获取文档（支持分页）"""
     try:
-        limit = request.args.get('limit', 50, type=int)
-        results = knowledge_base.get_by_category(category, limit)
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('page_size', 100, type=int)
+        result = knowledge_base.get_by_category(category, page, page_size)
         return jsonify({
             "code": 200,
             "data": {
-                "results": results,
+                "documents": result['documents'],
                 "category": category,
-                "total": len(results)
+                "total": result['total'],
+                "page": result['page'],
+                "page_size": result['page_size'],
+                "total_pages": result['total_pages']
             }
         })
     except Exception as e:
@@ -322,4 +326,4 @@ def ocr():
     })
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=False)

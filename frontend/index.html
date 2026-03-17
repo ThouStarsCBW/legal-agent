@@ -362,6 +362,8 @@
                                 <option value="宪法">宪法</option>
                                 <option value="法律">法律</option>
                                 <option value="行政法规">行政法规</option>
+                                <option value="监察法规">监察法规</option>
+                                <option value="司法解释">司法解释</option>
                             </select>
                             <div class="flex-1 relative">
                                 <input
@@ -398,13 +400,13 @@
                         <div 
                             v-for="(count, category) in kbStats" 
                             :key="category"
-                            @click="selectCategory(category)"
+                            @click="goToCategory(category)"
                             class="text-center cursor-pointer group"
                             :class="{'opacity-50': count === 0}"
                         >
                             <div class="text-lg font-bold text-[#3D4B94] group-hover:text-[#6B8EF8] transition-colors">{{ category }}</div>
                             <div class="text-2xl font-bold text-[#6B8EF8] mt-1">{{ count }}</div>
-                            <div class="w-full h-1 bg-[#6B8EF8] mt-2 rounded-full" :class="{'opacity-0': selectedCategory !== category}"></div>
+                            <div class="w-full h-1 bg-[#6B8EF8] mt-2 rounded-full"></div>
                         </div>
                     </div>
                 </div>
@@ -465,64 +467,6 @@
                                 </div>
                                 <span class="text-xs text-[#5A5880] whitespace-nowrap">{{ doc.publish_date }}</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 搜索结果展示区 -->
-                <div v-if="searchResults.length > 0" class="flex-1 p-6 overflow-y-auto scroll-area bg-white">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-bold text-[#3D4B94]">搜索结果 ({{ searchResults.length }})</h3>
-                        <button @click="clearSearch" class="text-sm text-[#6B8EF8] hover:text-[#3D4B94]">清除搜索</button>
-                    </div>
-                    <div class="space-y-4">
-                        <div 
-                            v-for="res in searchResults" 
-                            :key="res.id"
-                            @click="viewDocument(res)"
-                            class="result-card p-5 rounded-xl cursor-pointer"
-                        >
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xs flex-shrink-0">
-                                    {{ res.category[0] }}
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <h3 class="font-bold text-lg text-[#3D4B94]">{{ res.title }}</h3>
-                                        <span class="px-2 py-1 rounded-full bg-[#6B8EF8]/10 text-xs text-[#6B8EF8]">{{ res.category }}</span>
-                                    </div>
-                                    <p class="text-[#5A5880] text-sm leading-relaxed line-clamp-3">{{ res.content_preview }}</p>
-                                    <div class="flex items-center gap-4 mt-2 text-xs text-[#5A5880]">
-                                        <span>📅 {{ res.publish_date || '暂无日期' }}</span>
-                                        <span>📄 {{ res.rel_path }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 文档详情弹窗 -->
-                <div v-if="selectedDocument" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                        <div class="flex items-center justify-between p-6 border-b border-[#D4CFE8]">
-                            <div>
-                                <h3 class="text-xl font-bold text-[#3D4B94]">{{ selectedDocument.title }}</h3>
-                                <div class="flex items-center gap-2 mt-1 text-sm text-[#5A5880]">
-                                    <span class="px-2 py-1 rounded-full bg-[#6B8EF8]/10 text-[#6B8EF8]">{{ selectedDocument.category }}</span>
-                                    <span>{{ selectedDocument.publish_date }}</span>
-                                </div>
-                            </div>
-                            <button @click="selectedDocument = null" class="w-8 h-8 rounded-full hover:bg-[#F5F0FA] flex items-center justify-center text-[#5A5880]">
-                                ✕
-                            </button>
-                        </div>
-                        <div class="flex-1 overflow-y-auto p-6 scroll-area">
-                            <pre class="whitespace-pre-wrap text-sm text-[#2D2B55] leading-relaxed font-sans">{{ selectedDocument.content }}</pre>
-                        </div>
-                        <div class="p-4 border-t border-[#D4CFE8] flex justify-end gap-3">
-                            <button @click="selectedDocument = null" class="px-6 py-2 rounded-lg border border-[#D4CFE8] text-[#5A5880] hover:bg-[#F5F0FA]">关闭</button>
-                            <button @click="downloadDocument(selectedDocument)" class="px-6 py-2 rounded-lg bg-gradient-to-r from-[#6B8EF8] to-[#3D4B94] text-white">下载文档</button>
                         </div>
                     </div>
                 </div>
@@ -798,19 +742,15 @@
                 // 知识库检索模块
                 const searchKeyword = ref('');
                 const searchCategory = ref('');
-                const searchMode = ref('fuzzy');
-                const searchResults = ref([]);
                 const kbStats = ref({
                     '宪法': 0,
                     '法律': 0,
                     '行政法规': 0,
+                    '监察法规': 0,
                     '司法解释': 0
                 });
                 const latestDocs = ref([]);
                 const hotDocs = ref([]);
-                const activeTab = ref('hot');
-                const selectedCategory = ref('');
-                const selectedDocument = ref(null);
                 
                 // 加载知识库统计数据
                 const loadKbStats = async () => {
@@ -830,40 +770,31 @@
                 
                 const doSearch = async () => {
                     if(!searchKeyword.value) return;
-                    const res = await fetch(`${baseUrl}/search?keyword=${searchKeyword.value}&category=${searchCategory.value}&mode=${searchMode.value}`);
-                    const data = await res.json();
-                    searchResults.value = data.data.results;
+                    // 跳转到搜索结果页面
+                    window.location.href = `search.html?keyword=${encodeURIComponent(searchKeyword.value)}&category=${searchCategory.value}`;
                 };
                 
                 const clearSearch = () => {
                     searchKeyword.value = '';
                     searchCategory.value = '';
-                    searchMode.value = 'fuzzy';
-                    searchResults.value = [];
                 };
                 
-                const selectCategory = (category) => {
-                    selectedCategory.value = category;
-                    searchCategory.value = category;
-                    // 点击分类时自动加载该分类下的文档
-                    loadCategoryDocs(category);
+                const goToCategory = (category) => {
+                    window.location.href = `category.html?category=${encodeURIComponent(category)}`;
                 };
                 
-                // 加载分类文档
-                const loadCategoryDocs = async (category) => {
-                    try {
-                        const res = await fetch(`${baseUrl}/kb/category/${category}?limit=50`);
-                        const data = await res.json();
-                        if (data.code === 200) {
-                            searchResults.value = data.data.results;
-                        }
-                    } catch (e) {
-                        console.error('加载分类文档失败:', e);
-                    }
+                const goToLatest = () => {
+                    // TODO: 实现最新文档页面
+                    alert('最新文档页面开发中...');
+                };
+                
+                const goToHot = () => {
+                    // TODO: 实现热门文档页面
+                    alert('热门文档页面开发中...');
                 };
                 
                 const viewDocument = (doc) => {
-                    selectedDocument.value = doc;
+                    window.location.href = `document.html?id=${doc.id}`;
                 };
                 
                 const downloadDocument = (doc) => {
@@ -997,17 +928,14 @@
                     sendChat,
                     searchKeyword,
                     searchCategory,
-                    searchMode,
-                    searchResults,
                     kbStats,
                     latestDocs,
                     hotDocs,
-                    activeTab,
-                    selectedCategory,
-                    selectedDocument,
                     doSearch,
                     clearSearch,
-                    selectCategory,
+                    goToCategory,
+                    goToLatest,
+                    goToHot,
                     viewDocument,
                     downloadDocument,
                     selectedFile,

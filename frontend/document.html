@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档详情 - 智慧法律助手</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #F5F0FA;
+            --primary: #3D4B94;
+            --accent: #6B8EF8;
+            --text-primary: #2D2B55;
+            --border: #D4CFE8;
+        }
+        * { font-family: 'Noto Sans SC', sans-serif; }
+        .font-serif { font-family: 'Noto Serif SC', serif; }
+        body { background: linear-gradient(135deg, #F5F0FA 0%, #EDE8F4 100%); color: var(--text-primary); }
+        .btn-primary { background: linear-gradient(135deg, #6B8EF8 0%, #3D4B94 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(107, 142, 248, 0.5); }
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-track { background: rgba(61, 75, 148, 0.05); border-radius: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #6B8EF8 0%, #3D4B94 100%); border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <div id="app" class="h-full flex flex-col">
+        <!-- 顶部工具栏 -->
+        <div class="bg-white border-b border-[#D4CFE8] p-4 shadow-sm">
+            <div class="max-w-5xl mx-auto flex items-center justify-between">
+                <button @click="goBack" class="flex items-center gap-2 text-[#5A5880] hover:text-[#3D4B94] transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span>返回列表</span>
+                </button>
+                <div class="flex items-center gap-2">
+                    <button @click="printDocument" class="px-4 py-2 rounded-lg border border-[#D4CFE8] text-[#5A5880] hover:bg-[#F5F0FA] transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        </svg>
+                        打印
+                    </button>
+                    <button @click="downloadDocument" class="px-6 py-2 rounded-lg bg-gradient-to-r from-[#6B8EF8] to-[#3D4B94] text-white flex items-center gap-2 hover:shadow-lg transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        下载文档
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文档内容区 -->
+        <div class="flex-1 overflow-y-auto p-6 scroll-area">
+            <div v-if="loading" class="text-center py-20">
+                <div class="w-16 h-16 rounded-full border-4 border-[#6B8EF8] border-t-transparent animate-spin mx-auto mb-4"></div>
+                <p class="text-[#5A5880]">正在加载文档...</p>
+            </div>
+
+            <div v-else-if="document" class="max-w-4xl mx-auto">
+                <!-- 文档头部信息 -->
+                <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex-1">
+                            <h1 class="text-3xl font-bold text-[#3D4B94] mb-4 font-serif">{{ document.title }}</h1>
+                            <div class="flex items-center gap-4 flex-wrap">
+                                <span class="px-3 py-1 rounded-full bg-[#6B8EF8]/10 text-[#6B8EF8] text-sm font-medium">{{ document.category }}</span>
+                                <span class="flex items-center gap-1 text-sm text-[#5A5880]">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    {{ document.publish_date || '无发布日期' }}
+                                </span>
+                                <span class="flex items-center gap-1 text-sm text-[#5A5880]">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    {{ wordCount }} 字
+                                </span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                            {{ document.category[0] }}
+                        </div>
+                    </div>
+                    
+                    <!-- 文档元数据 -->
+                    <div class="grid grid-cols-2 gap-4 pt-6 border-t border-[#D4CFE8]">
+                        <div>
+                            <div class="text-xs text-[#5A5880] mb-1">文件路径</div>
+                            <div class="text-sm text-[#2D2B55] truncate">{{ document.rel_path }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-[#5A5880] mb-1">最后更新</div>
+                            <div class="text-sm text-[#2D2B55]">{{ document.publish_date || '未知' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文档正文 -->
+                <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-[#D4CFE8]">
+                        <svg class="w-6 h-6 text-[#6B8EF8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h2 class="text-xl font-bold text-[#3D4B94] font-serif">文档全文</h2>
+                    </div>
+                    <div class="prose max-w-none">
+                        <pre class="whitespace-pre-wrap text-sm text-[#2D2B55] leading-relaxed font-sans">{{ document.content }}</pre>
+                    </div>
+                </div>
+
+                <!-- 底部操作栏 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border-t border-[#D4CFE8]">
+                    <div class="flex justify-center gap-4">
+                        <button @click="goBack" class="px-8 py-3 rounded-lg border border-[#D4CFE8] text-[#5A5880] hover:bg-[#F5F0FA] transition font-medium">
+                            ← 返回
+                        </button>
+                        <button @click="printDocument" class="px-8 py-3 rounded-lg bg-white border border-[#D4CFE8] text-[#5A5880] hover:bg-[#F5F0FA] transition font-medium flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            打印文档
+                        </button>
+                        <button @click="downloadDocument" class="px-8 py-3 rounded-lg bg-gradient-to-r from-[#6B8EF8] to-[#3D4B94] text-white font-medium flex items-center gap-2 hover:shadow-lg transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            下载文档
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else class="text-center py-20">
+                <div class="w-24 h-24 rounded-full legal-icon flex items-center justify-center text-4xl mx-auto mb-4">❌</div>
+                <p class="text-lg font-medium text-[#5A5880]">文档不存在或已被删除</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const baseUrl = 'http://127.0.0.1:5000/api';
+                const loading = ref(true);
+                const document = ref(null);
+
+                const wordCount = computed(() => {
+                    return document.value ? document.value.content.length : 0;
+                });
+
+                onMounted(async () => {
+                    const params = new URLSearchParams(window.location.search);
+                    const docId = params.get('id');
+                    
+                    if (docId) {
+                        await loadDocument(docId);
+                    } else {
+                        loading.value = false;
+                    }
+                });
+
+                const loadDocument = async (docId) => {
+                    loading.value = true;
+                    try {
+                        const res = await fetch(`${baseUrl}/kb/document/${docId}`);
+                        const data = await res.json();
+                        if (data.code === 200) {
+                            document.value = data.data;
+                        }
+                    } catch (e) {
+                        console.error('加载失败:', e);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const downloadDocument = () => {
+                    if (!document.value) return;
+                    
+                    const blob = new Blob([document.value.content], { type: 'application/msword' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${document.value.title}.doc`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                };
+
+                const printDocument = () => {
+                    if (!document.value) return;
+                    
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>${document.value.title}</title>
+                            <style>
+                                body { font-family: 'SimSun', serif; padding: 40px; line-height: 1.8; }
+                                h1 { text-align: center; color: #333; margin-bottom: 30px; }
+                                .meta { text-align: center; color: #666; margin-bottom: 40px; }
+                                .content { white-space: pre-wrap; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>${document.value.title}</h1>
+                            <div class="meta">
+                                <p>分类：${document.value.category} | 发布日期：${document.value.publish_date || '无'}</p>
+                            </div>
+                            <div class="content">${document.value.content}</div>
+                        </body>
+                        </html>
+                    `);
+                    printWindow.document.close();
+                    printWindow.print();
+                };
+
+                const goBack = () => {
+                    window.history.back();
+                };
+
+                return {
+                    loading,
+                    document,
+                    wordCount,
+                    downloadDocument,
+                    printDocument,
+                    goBack
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

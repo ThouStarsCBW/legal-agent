@@ -1,61 +1,65 @@
 #!/usr/bin/env python3
 """
-知识库管理模块 - 加载和检索法律文档
+知识库管理模块 - 加载和检索法律文档（Word 版本）
 """
 import os
 import re
 from pathlib import Path
 from typing import List, Dict, Optional
 import json
+from docx import Document
 
 class KnowledgeBase:
     """法律知识库"""
     
-    def __init__(self, base_path: str = "E:/服务外包/法律md版"):
-        self.base_path = Path(base_path)
+    def __init__(self, base_path: str = None):
+        # 智能路径处理：law_word 文件夹与 backend 同级
+        if base_path is None:
+            # law_word 在 backend 的父目录（与 backend 同级）
+            self.base_path = Path(__file__).parent.parent / "law_word"
+        else:
+            self.base_path = Path(base_path)
         self.documents = []
         self.stats = {
             '宪法': 0,
             '法律': 0,
             '行政法规': 0,
             '监察法规': 0,
-            '地方法规': 0,
             '司法解释': 0
         }
         self.load_documents()
     
     def load_documents(self):
-        """加载所有法律文档"""
-        print("正在加载法律文档...")
-        
+        """加载所有法律文档（Word 版本）"""
+        print("正在加载法律 Word 文档...")
+            
         if not self.base_path.exists():
-            print(f"警告: 文档目录不存在 {self.base_path}")
+            print(f"警告：文档目录不存在 {self.base_path}")
             return
-        
+            
         for root, dirs, files in os.walk(self.base_path):
             for file in files:
-                if file.endswith('.md'):
+                if file.endswith('.docx') and not file.startswith('~$'):
                     file_path = Path(root) / file
                     rel_path = file_path.relative_to(self.base_path)
-                    
-                    # 读取文件内容
+                        
+                    # 读取 Word 文档内容
                     try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            content = f.read()
+                        content = self._read_word_content(file_path)
                     except Exception as e:
-                        print(f"  读取失败: {file_path} - {e}")
+                        print(f"  读取失败：{file_path} - {e}")
                         continue
-                    
-                    # 提取标题（第一行）
-                    title = self._extract_title(content, file)
-                    
+                        
+                    # 提取标题（从文件名或文档内容）
+                    title = self._extract_title_from_word(content, file)
+                        
                     # 提取发布日期
                     publish_date = self._extract_date(file)
-                    
+                        
                     # 分类
                     category = self._categorize(str(rel_path))
                     self.stats[category] += 1
-                    
+                        
                     doc = {
                         'id': len(self.documents),
                         'title': title,
@@ -66,24 +70,29 @@ class KnowledgeBase:
                         'content': content,
                         'content_preview': content[:500] + '...' if len(content) > 500 else content
                     }
-                    
+                        
                     self.documents.append(doc)
-        
-        print(f"已加载 {len(self.documents)} 个法律文档")
+            
+        print(f"已加载 {len(self.documents)} 个法律 Word 文档")
         for cat, count in self.stats.items():
             if count > 0:
                 print(f"  {cat}: {count}")
     
-    def _extract_title(self, content: str, filename: str) -> str:
-        """从内容或文件名提取标题"""
-        # 尝试从第一行提取标题
+    def _read_word_content(self, file_path: Path) -> str:
+        """读取 Word 文档内容"""
+        doc = Document(file_path)
+        paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
+        return '\n'.join(paragraphs)
+    
+    def _extract_title_from_word(self, content: str, filename: str) -> str:
+        """从 Word 内容或文件名提取标题"""
+        # 尝试从第一段提取标题（通常 Word 文档第一段是标题）
         lines = content.strip().split('\n')
-        for line in lines[:5]:
-            line = line.strip()
-            if line.startswith('# '):
-                return line[2:].strip()
-            elif line.startswith('## '):
-                return line[3:].strip()
+        if lines:
+            first_line = lines[0].strip()
+            # 如果第一行比较短（可能是标题）
+            if len(first_line) < 100 and first_line:
+                return first_line
         
         # 从文件名提取
         name = Path(filename).stem
@@ -100,19 +109,19 @@ class KnowledgeBase:
         return ""
     
     def _categorize(self, rel_path: str) -> str:
-        """根据路径分类"""
+        """根据路径分类（5 大类）"""
         if '宪法' in rel_path:
             return '宪法'
+        elif '法律' in rel_path:
+            return '法律'
         elif '行政法规' in rel_path:
             return '行政法规'
         elif '监察' in rel_path:
             return '监察法规'
-        elif '地方' in rel_path:
-            return '地方法规'
-        elif '司法' in rel_path or '解释' in rel_path:
+        elif '司法' in rel_path:
             return '司法解释'
         else:
-            return '法律'
+            return '其他'
     
     def search(self, keyword: str, category: Optional[str] = None, limit: int = 20) -> List[Dict]:
         """搜索文档"""
@@ -152,10 +161,24 @@ class KnowledgeBase:
         
         return results[:limit]
     
-    def get_by_category(self, category: str, limit: int = 50) -> List[Dict]:
-        """按分类获取文档"""
+    def get_by_category(self, category: str, page: int = 1, page_size: int = 100) -> Dict:
+        """按分类获取文档（支持分页）"""
         results = [doc for doc in self.documents if doc['category'] == category]
-        return results[:limit]
+        total = len(results)
+        total_pages = (total + page_size - 1) // page_size
+        
+        # 计算分页
+        start = (page - 1) * page_size
+        end = start + page_size
+        page_results = results[start:end]
+        
+        return {
+            'documents': page_results,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages
+        }
     
     def get_document(self, doc_id: int) -> Optional[Dict]:
         """获取单个文档"""

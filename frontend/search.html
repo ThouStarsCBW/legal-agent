@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索结果 - 智慧法律助手</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #F5F0FA;
+            --bg-secondary: #EDE8F4;
+            --primary: #3D4B94;
+            --primary-dark: #2D3A7A;
+            --accent: #6B8EF8;
+            --accent-light: #8BA8FA;
+            --text-primary: #2D2B55;
+            --text-secondary: #5A5880;
+            --border: #D4CFE8;
+            --shadow: rgba(61, 75, 148, 0.1);
+        }
+        * { font-family: 'Noto Sans SC', sans-serif; }
+        .font-serif { font-family: 'Noto Serif SC', serif; }
+        body { background: linear-gradient(135deg, #F5F0FA 0%, #EDE8F4 100%); color: var(--text-primary); }
+        .card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border: 1px solid var(--border); box-shadow: 0 4px 20px var(--shadow); }
+        .btn-primary { background: linear-gradient(135deg, #6B8EF8 0%, #3D4B94 100%); transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(107, 142, 248, 0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(107, 142, 248, 0.5); }
+        .result-card { background: rgba(255, 255, 255, 0.9); border-left: 4px solid #6B8EF8; transition: all 0.3s ease; }
+        .result-card:hover { transform: translateX(5px); box-shadow: 0 4px 15px rgba(107, 142, 248, 0.2); }
+        .highlight { background-color: yellow; font-weight: bold; padding: 2px 4px; border-radius: 2px; }
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-track { background: rgba(61, 75, 148, 0.05); border-radius: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #6B8EF8 0%, #3D4B94 100%); border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <div id="app" class="h-full flex flex-col">
+        <!-- 顶部导航栏 -->
+        <div class="bg-gradient-to-r from-[#3D4B94] to-[#6B8EF8] p-4 text-white shadow-lg">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button @click="goBack" class="flex items-center gap-2 hover:opacity-80 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        <span>返回主页</span>
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">⚖️</div>
+                        <div>
+                            <h1 class="text-xl font-bold font-serif">搜索结果</h1>
+                            <p class="text-xs text-white/70">{{ keyword }} - 共 {{ searchResults.length }} 条结果</p>
+                        </div>
+                    </div>
+                </div>
+                <button @click="downloadAll" class="px-6 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    <span>批量下载</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 搜索结果列表 -->
+        <div class="flex-1 overflow-y-auto p-6 scroll-area">
+            <div class="max-w-5xl mx-auto">
+                <div v-if="loading" class="text-center py-20">
+                    <div class="w-16 h-16 rounded-full border-4 border-[#6B8EF8] border-t-transparent animate-spin mx-auto mb-4"></div>
+                    <p class="text-[#5A5880]">正在加载搜索结果...</p>
+                </div>
+
+                <div v-else-if="searchResults.length === 0" class="text-center py-20">
+                    <div class="w-24 h-24 rounded-full legal-icon flex items-center justify-center text-4xl mx-auto mb-4">🔍</div>
+                    <p class="text-lg font-medium text-[#5A5880]">未找到相关结果</p>
+                    <p class="text-sm text-[#5A5880] mt-2">请尝试其他关键词或调整搜索条件</p>
+                </div>
+
+                <div v-else class="space-y-4">
+                    <div 
+                        v-for="(res, index) in searchResults" 
+                        :key="res.id"
+                        @click="viewDocument(res)"
+                        class="result-card p-6 rounded-xl cursor-pointer"
+                    >
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-sm flex-shrink-0 font-bold">
+                                {{ res.category[0] }}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-bold text-xl text-[#3D4B94]">{{ highlightText(res.title) }}</h3>
+                                    <span class="px-3 py-1 rounded-full bg-[#6B8EF8]/10 text-xs text-[#6B8EF8] font-medium">{{ res.category }}</span>
+                                </div>
+                                <p class="text-[#5A5880] text-sm leading-relaxed mb-3" v-html="highlightContent(res.content_preview)"></p>
+                                <div class="flex items-center gap-6 text-xs text-[#5A5880]">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        {{ res.publish_date || '暂无日期' }}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        {{ getWordCount(res.content) }} 字
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                        </svg>
+                                        匹配度：{{ res.score }}
+                                    </span>
+                                </div>
+                            </div>
+                            <button @click.stop="downloadSingle(res)" class="px-4 py-2 rounded-lg bg-[#6B8EF8] text-white text-sm hover:bg-[#3D4B94] transition flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                下载
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文档详情弹窗 -->
+        <div v-if="selectedDocument" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                <div class="flex items-center justify-between p-6 border-b border-[#D4CFE8]">
+                    <div>
+                        <h3 class="text-xl font-bold text-[#3D4B94]">{{ selectedDocument.title }}</h3>
+                        <div class="flex items-center gap-2 mt-1 text-sm text-[#5A5880]">
+                            <span class="px-2 py-1 rounded-full bg-[#6B8EF8]/10 text-[#6B8EF8]">{{ selectedDocument.category }}</span>
+                            <span>{{ selectedDocument.publish_date }}</span>
+                            <span>{{ getWordCount(selectedDocument.content) }} 字</span>
+                        </div>
+                    </div>
+                    <button @click="selectedDocument = null" class="w-8 h-8 rounded-full hover:bg-[#F5F0FA] flex items-center justify-center text-[#5A5880]">✕</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-6 scroll-area">
+                    <pre class="whitespace-pre-wrap text-sm text-[#2D2B55] leading-relaxed font-sans">{{ selectedDocument.content }}</pre>
+                </div>
+                <div class="p-4 border-t border-[#D4CFE8] flex justify-end gap-3">
+                    <button @click="selectedDocument = null" class="px-6 py-2 rounded-lg border border-[#D4CFE8] text-[#5A5880] hover:bg-[#F5F0FA]">关闭</button>
+                    <button @click="downloadSingle(selectedDocument)" class="px-6 py-2 rounded-lg bg-gradient-to-r from-[#6B8EF8] to-[#3D4B94] text-white flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        下载文档
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const baseUrl = 'http://127.0.0.1:5000/api';
+                const loading = ref(true);
+                const keyword = ref('');
+                const category = ref('');
+                const searchResults = ref([]);
+                const selectedDocument = ref(null);
+
+                // 从 URL 参数获取搜索关键词和分类
+                onMounted(() => {
+                    const params = new URLSearchParams(window.location.search);
+                    keyword.value = params.get('keyword') || '';
+                    category.value = params.get('category') || '';
+                    
+                    if (keyword.value) {
+                        doSearch();
+                    } else {
+                        loading.value = false;
+                    }
+                });
+
+                const doSearch = async () => {
+                    loading.value = true;
+                    try {
+                        const url = `${baseUrl}/search?keyword=${encodeURIComponent(keyword.value)}&category=${category.value}`;
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        if (data.code === 200) {
+                            searchResults.value = data.data.results;
+                        }
+                    } catch (e) {
+                        console.error('搜索失败:', e);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const highlightText = (text) => {
+                    if (!keyword.value) return text;
+                    const regex = new RegExp(`(${keyword.value})`, 'gi');
+                    return text.replace(regex, '<span class="highlight">$1</span>');
+                };
+
+                const highlightContent = (content) => {
+                    if (!keyword.value) return content;
+                    const regex = new RegExp(`(${keyword.value})`, 'gi');
+                    return content.replace(regex, '<span class="highlight">$1</span>');
+                };
+
+                const getWordCount = (text) => {
+                    return text ? text.length : 0;
+                };
+
+                const viewDocument = (doc) => {
+                    selectedDocument.value = doc;
+                };
+
+                const downloadSingle = (doc) => {
+                    // 创建 Blob 下载
+                    const blob = new Blob([doc.content], { type: 'application/msword' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${doc.title}.doc`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                };
+
+                const downloadAll = () => {
+                    alert('批量下载功能开发中...');
+                    // TODO: 实现批量下载为 ZIP
+                };
+
+                const goBack = () => {
+                    window.history.back();
+                };
+
+                return {
+                    loading,
+                    keyword,
+                    searchResults,
+                    selectedDocument,
+                    highlightText,
+                    highlightContent,
+                    getWordCount,
+                    viewDocument,
+                    downloadSingle,
+                    downloadAll,
+                    goBack
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

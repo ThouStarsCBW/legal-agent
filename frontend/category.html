@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分类浏览 - 智慧法律助手</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #F5F0FA;
+            --bg-secondary: #EDE8F4;
+            --primary: #3D4B94;
+            --primary-dark: #2D3A7A;
+            --accent: #6B8EF8;
+            --text-primary: #2D2B55;
+            --text-secondary: #5A5880;
+            --border: #D4CFE8;
+            --shadow: rgba(61, 75, 148, 0.1);
+        }
+        * { font-family: 'Noto Sans SC', sans-serif; }
+        .font-serif { font-family: 'Noto Serif SC', serif; }
+        body { background: linear-gradient(135deg, #F5F0FA 0%, #EDE8F4 100%); color: var(--text-primary); }
+        .card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border: 1px solid var(--border); box-shadow: 0 4px 20px var(--shadow); }
+        .btn-primary { background: linear-gradient(135deg, #6B8EF8 0%, #3D4B94 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(107, 142, 248, 0.5); }
+        .doc-card { background: white; border-left: 4px solid #6B8EF8; transition: all 0.3s ease; }
+        .doc-card:hover { transform: translateX(5px); box-shadow: 0 4px 15px rgba(107, 142, 248, 0.2); cursor: pointer; }
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-track { background: rgba(61, 75, 148, 0.05); border-radius: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #6B8EF8 0%, #3D4B94 100%); border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <div id="app" class="h-full flex flex-col">
+        <!-- 顶部导航栏 -->
+        <div class="bg-gradient-to-r from-[#3D4B94] to-[#6B8EF8] p-4 text-white shadow-lg">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button @click="goBack" class="flex items-center gap-2 hover:opacity-80 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        <span>返回主页</span>
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">📚</div>
+                        <div>
+                            <h1 class="text-xl font-bold font-serif">{{ categoryTitle }}</h1>
+                            <p class="text-xs text-white/70">共 {{ pagination.total }} 个文档 · 第 {{ pagination.page }}/{{ pagination.total_pages }} 页</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button @click="sortByDate" :class="sortBy === 'date' ? 'bg-white/30' : 'bg-white/20'" class="px-4 py-2 rounded-lg hover:bg-white/30 transition text-sm">
+                        📅 按日期
+                    </button>
+                    <button @click="sortByName" :class="sortBy === 'name' ? 'bg-white/30' : 'bg-white/20'" class="px-4 py-2 rounded-lg hover:bg-white/30 transition text-sm">
+                        🔤 按名称
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文档列表 -->
+        <div class="flex-1 overflow-y-auto p-6 scroll-area">
+            <div class="max-w-6xl mx-auto">
+                <div v-if="loading" class="text-center py-20">
+                    <div class="w-16 h-16 rounded-full border-4 border-[#6B8EF8] border-t-transparent animate-spin mx-auto mb-4"></div>
+                    <p class="text-[#5A5880]">正在加载文档列表...</p>
+                </div>
+
+                <div v-else-if="documents.length === 0" class="text-center py-20">
+                    <div class="w-24 h-24 rounded-full legal-icon flex items-center justify-center text-4xl mx-auto mb-4">📄</div>
+                    <p class="text-lg font-medium text-[#5A5880]">该分类下暂无文档</p>
+                </div>
+
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                        v-for="doc in sortedDocuments" 
+                        :key="doc.id"
+                        @click="viewDocument(doc)"
+                        class="doc-card p-5 rounded-xl"
+                    >
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-[#3D4B94] mb-2 line-clamp-2">{{ doc.title }}</h3>
+                                <div class="flex items-center gap-2 text-xs text-[#5A5880]">
+                                    <span class="px-2 py-1 rounded-full bg-[#6B8EF8]/10 text-[#6B8EF8]">{{ doc.category }}</span>
+                                    <span>📅 {{ doc.publish_date || '无日期' }}</span>
+                                </div>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#6B8EF8] to-[#3D4B94] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                {{ doc.category[0] }}
+                            </div>
+                        </div>
+                        <p class="text-sm text-[#5A5880] leading-relaxed line-clamp-3 mb-3">{{ doc.content_preview }}</p>
+                        <div class="flex items-center justify-between text-xs text-[#5A5880]">
+                            <span>{{ getWordCount(doc.content) }} 字</span>
+                            <button @click.stop="downloadDocument(doc)" class="px-3 py-1 rounded bg-[#6B8EF8] text-white hover:bg-[#3D4B94] transition flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                下载
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分页控件 -->
+                <div v-if="pagination.total_pages > 1" class="mt-8 flex justify-center items-center gap-2 pb-6">
+                    <button 
+                        @click="changePage(1)" 
+                        :disabled="pagination.page === 1"
+                        class="px-4 py-2 rounded-lg border border-[#D4CFE8] bg-white text-[#5A5880] hover:bg-[#F5F0FA] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        首页
+                    </button>
+                    <button 
+                        @click="changePage(pagination.page - 1)" 
+                        :disabled="pagination.page === 1"
+                        class="px-4 py-2 rounded-lg border border-[#D4CFE8] bg-white text-[#5A5880] hover:bg-[#F5F0FA] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        ← 上一页
+                    </button>
+                    
+                    <div class="flex items-center gap-2">
+                        <template v-for="p in visiblePages" :key="p">
+                            <button
+                                @click="changePage(p)"
+                                :class="p === pagination.page ? 'bg-[#6B8EF8] text-white' : 'bg-white text-[#5A5880] hover:bg-[#F5F0FA]'"
+                                class="px-4 py-2 rounded-lg border border-[#D4CFE8] transition"
+                            >
+                                {{ p }}
+                            </button>
+                        </template>
+                    </div>
+
+                    <button 
+                        @click="changePage(pagination.page + 1)" 
+                        :disabled="pagination.page === pagination.total_pages"
+                        class="px-4 py-2 rounded-lg border border-[#D4CFE8] bg-white text-[#5A5880] hover:bg-[#F5F0FA] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        下一页 →
+                    </button>
+                    <button 
+                        @click="changePage(pagination.total_pages)" 
+                        :disabled="pagination.page === pagination.total_pages"
+                        class="px-4 py-2 rounded-lg border border-[#D4CFE8] bg-white text-[#5A5880] hover:bg-[#F5F0FA] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        末页
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文档详情弹窗 -->
+        <div v-if="selectedDocument" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                <div class="flex items-center justify-between p-6 border-b border-[#D4CFE8]">
+                    <div>
+                        <h3 class="text-xl font-bold text-[#3D4B94]">{{ selectedDocument.title }}</h3>
+                        <div class="flex items-center gap-2 mt-1 text-sm text-[#5A5880]">
+                            <span class="px-2 py-1 rounded-full bg-[#6B8EF8]/10 text-[#6B8EF8]">{{ selectedDocument.category }}</span>
+                            <span>{{ selectedDocument.publish_date }}</span>
+                            <span>{{ getWordCount(selectedDocument.content) }} 字</span>
+                        </div>
+                    </div>
+                    <button @click="selectedDocument = null" class="w-8 h-8 rounded-full hover:bg-[#F5F0FA] flex items-center justify-center text-[#5A5880]">✕</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-6 scroll-area">
+                    <pre class="whitespace-pre-wrap text-sm text-[#2D2B55] leading-relaxed font-sans">{{ selectedDocument.content }}</pre>
+                </div>
+                <div class="p-4 border-t border-[#D4CFE8] flex justify-end gap-3">
+                    <button @click="selectedDocument = null" class="px-6 py-2 rounded-lg border border-[#D4CFE8] text-[#5A5880] hover:bg-[#F5F0FA]">关闭</button>
+                    <button @click="downloadDocument(selectedDocument)" class="px-6 py-2 rounded-lg bg-gradient-to-r from-[#6B8EF8] to-[#3D4B94] text-white flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        下载文档
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const baseUrl = 'http://127.0.0.1:5000/api';
+                const loading = ref(true);
+                const category = ref('');
+                const documents = ref([]);
+                const sortBy = ref('date');
+                const pagination = ref({
+                    page: 1,
+                    page_size: 100,
+                    total: 0,
+                    total_pages: 0
+                });
+                const selectedDocument = ref(null);
+
+                const categoryTitleMap = {
+                    '宪法': '宪法类法律文档',
+                    '法律': '法律类文档',
+                    '行政法规': '行政法规文档',
+                    '监察法规': '监察法规文档',
+                    '司法解释': '司法解释文档'
+                };
+
+                const categoryTitle = computed(() => {
+                    return categoryTitleMap[category.value] || '分类浏览';
+                });
+
+                const sortedDocuments = computed(() => {
+                    if (sortBy.value === 'date') {
+                        return [...documents.value].sort((a, b) => {
+                            return (b.publish_date || '').localeCompare(a.publish_date || '');
+                        });
+                    } else {
+                        return [...documents.value].sort((a, b) => {
+                            return a.title.localeCompare(b.title, 'zh-Hans-CN');
+                        });
+                    }
+                });
+
+                onMounted(() => {
+                    const params = new URLSearchParams(window.location.search);
+                    category.value = params.get('category') || '';
+                    
+                    if (category.value) {
+                        loadCategoryDocs();
+                    } else {
+                        loading.value = false;
+                    }
+                });
+
+                const loadCategoryDocs = async (page = 1) => {
+                    loading.value = true;
+                    console.log('加载分类文档，页码:', page);
+                    try {
+                        const url = `${baseUrl}/kb/category/${category.value}?page=${page}&page_size=100`;
+                        console.log('请求 URL:', url);
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        console.log('返回数据:', data);
+                        if (data.code === 200) {
+                            documents.value = data.data.documents;
+                            pagination.value = {
+                                page: data.data.page,
+                                page_size: data.data.page_size,
+                                total: data.data.total,
+                                total_pages: data.data.total_pages
+                            };
+                            console.log('更新后的分页:', pagination.value);
+                        }
+                    } catch (e) {
+                        console.error('加载失败:', e);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const getWordCount = (text) => {
+                    return text ? text.length : 0;
+                };
+
+                const viewDocument = (doc) => {
+                    selectedDocument.value = doc;
+                };
+
+                const downloadDocument = (doc) => {
+                    const blob = new Blob([doc.content], { type: 'application/msword' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${doc.title}.doc`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                };
+
+                const changePage = (page) => {
+                    console.log('切换页码:', page, '当前分页:', pagination.value);
+                    if (page < 1 || page > pagination.value.total_pages) {
+                        console.log('页码超出范围');
+                        return;
+                    }
+                    loadCategoryDocs(page);
+                    // 滚动到顶部
+                    document.querySelector('.scroll-area').scrollTop = 0;
+                };
+
+                const sortByDate = () => { sortBy.value = 'date'; };
+                const sortByName = () => { sortBy.value = 'name'; };
+
+                const visiblePages = computed(() => {
+                    const pages = [];
+                    const current = pagination.value.page;
+                    const total = pagination.value.total_pages;
+                    
+                    // 显示当前页前后各 2 页
+                    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+                        pages.push(i);
+                    }
+                    return pages;
+                });
+
+                const goBack = () => {
+                    window.history.back();
+                };
+
+                return {
+                    loading,
+                    category,
+                    documents,
+                    pagination,
+                    sortBy,
+                    sortedDocuments,
+                    categoryTitle,
+                    selectedDocument,
+                    getWordCount,
+                    viewDocument,
+                    downloadDocument,
+                    changePage,
+                    visiblePages,
+                    sortByDate,
+                    sortByName,
+                    goBack
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

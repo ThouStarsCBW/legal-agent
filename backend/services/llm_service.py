@@ -37,7 +37,8 @@ def generate_response(prompt, model=DEFAULT_MODEL, stream=False):
             stream_resp = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                stream=True
+                stream=True,
+                extra_body={"enable_thinking": False}  # 关闭深度思考
             )
             
             for chunk in stream_resp:
@@ -52,7 +53,8 @@ def generate_response(prompt, model=DEFAULT_MODEL, stream=False):
             # 普通输出
             completion = client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
+                extra_body={"enable_thinking": False}  # 关闭深度思考
             )
             return completion.choices[0].message.content
     
@@ -143,7 +145,8 @@ def chat_with_ai(message, conversation_history=None, stream=False):
             stream_resp = client.chat.completions.create(
                 model=DEFAULT_MODEL,
                 messages=messages,
-                stream=True
+                stream=True,
+                extra_body={"enable_thinking": False}  # 关闭深度思考
             )
             
             for chunk in stream_resp:
@@ -158,7 +161,8 @@ def chat_with_ai(message, conversation_history=None, stream=False):
             # 普通输出
             completion = client.chat.completions.create(
                 model=DEFAULT_MODEL,
-                messages=messages
+                messages=messages,
+                extra_body={"enable_thinking": False}  # 关闭深度思考
             )
             return completion.choices[0].message.content
     

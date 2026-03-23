@@ -7,6 +7,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/cyber-theme.css" />
+    <script src="auth.js"></script>
     <style>
         :root {
             --bg-primary: #F5F0FA;
@@ -166,7 +168,7 @@
         }
     </style>
 </head>
-<body class="h-screen overflow-hidden">
+<body class="cyber-app h-screen overflow-hidden">
     <div id="app" class="flex h-full">
         <!-- 侧边栏 -->
         <div class="sidebar w-72 flex flex-col text-white">
@@ -240,6 +242,7 @@
                     <p>© 2026 智慧法律助手</p>
                     <p class="mt-1">本系统仅供参考，不构成正式法律意见</p>
                 </div>
+                <button type="button" class="cyber-logout-btn" onclick="legalLogout()">退出登录</button>
             </div>
         </div>
 
@@ -328,8 +331,20 @@
                         type="text"
                         placeholder="请输入您的法律问题..."
                         class="flex-1 input-field px-5 py-4 rounded-xl text-[#2D2B55] placeholder-[#5A5880]/50"
-                        :disabled="isChatLoading"
+                        :disabled="isChatLoading || isVoicePending"
                     >
+                    <button
+                        type="button"
+                        @click="toggleVoiceRecording"
+                        :disabled="isChatLoading || isVoicePending"
+                        class="shrink-0 px-4 py-4 rounded-xl font-medium flex items-center justify-center border transition-colors"
+                        :class="isRecordingVoice ? 'bg-red-500 text-white border-red-600' : 'bg-white text-[#3D4B94] border-[#D4CFE8] hover:bg-[#F5F0FA]'"
+                        :title="isRecordingVoice ? '点击结束录音并识别' : '语音输入（百度语音识别，点击开始）'"
+                    >
+                        <span v-if="isVoicePending" class="text-lg">⏳</span>
+                        <span v-else-if="isRecordingVoice" class="text-lg">⏹</span>
+                        <span v-else class="text-lg">🎤</span>
+                    </button>
                     <button
                         @click="sendChat"
                         class="btn-primary px-8 py-4 rounded-xl text-white font-medium flex items-center gap-2"
@@ -667,6 +682,49 @@
     <script>
         const { createApp, ref, reactive } = Vue;
 
+        function resampleFloat32(input, fromRate, toRate) {
+            if (fromRate === toRate) return input;
+            const ratio = fromRate / toRate;
+            const outLen = Math.max(1, Math.floor(input.length / ratio));
+            const out = new Float32Array(outLen);
+            for (let i = 0; i < outLen; i++) {
+                const src = i * ratio;
+                const i0 = Math.floor(src);
+                const i1 = Math.min(i0 + 1, input.length - 1);
+                const t = src - i0;
+                out[i] = input[i0] * (1 - t) + input[i1] * t;
+            }
+            return out;
+        }
+
+        function writeString(view, offset, str) {
+            for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        }
+
+        function encodeWavBuffer(samples, sampleRate) {
+            const buffer = new ArrayBuffer(44 + samples.length * 2);
+            const view = new DataView(buffer);
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + samples.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, samples.length * 2, true);
+            let offset = 44;
+            for (let i = 0; i < samples.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, samples[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+            }
+            return buffer;
+        }
+
         createApp({
             setup() {
                 const baseUrl = 'http://127.0.0.1:5000/api';
@@ -682,6 +740,81 @@
                 // 法律问答模块
                 const chatInput = ref('');
                 const chatHistory = ref([]);
+                const isRecordingVoice = ref(false);
+                const isVoicePending = ref(false);
+                let voiceStream = null;
+                let voiceCtx = null;
+                let voiceProc = null;
+                let voiceGain = null;
+                let voiceBuffers = [];
+
+                const toggleVoiceRecording = async () => {
+                    if (isVoicePending.value || isChatLoading.value) return;
+                    if (!isRecordingVoice.value) {
+                        try {
+                            voiceBuffers = [];
+                            voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            voiceCtx = new AudioContext();
+                            const source = voiceCtx.createMediaStreamSource(voiceStream);
+                            const bufferSize = 4096;
+                            voiceProc = voiceCtx.createScriptProcessor(bufferSize, 1, 1);
+                            voiceProc.onaudioprocess = (e) => {
+                                voiceBuffers.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+                            };
+                            voiceGain = voiceCtx.createGain();
+                            voiceGain.gain.value = 0;
+                            source.connect(voiceProc);
+                            voiceProc.connect(voiceGain);
+                            voiceGain.connect(voiceCtx.destination);
+                            isRecordingVoice.value = true;
+                        } catch (e) {
+                            console.error(e);
+                            alert('无法使用麦克风：' + (e.message || e));
+                        }
+                        return;
+                    }
+                    isRecordingVoice.value = false;
+                    isVoicePending.value = true;
+                    const rateIn = voiceCtx ? voiceCtx.sampleRate : 48000;
+                    try {
+                        if (voiceProc) { voiceProc.disconnect(); voiceProc = null; }
+                        if (voiceGain) { voiceGain.disconnect(); voiceGain = null; }
+                        if (voiceStream) { voiceStream.getTracks().forEach((t) => t.stop()); voiceStream = null; }
+                        if (voiceCtx) { await voiceCtx.close(); voiceCtx = null; }
+                    } catch (_) {}
+                    let total = 0;
+                    voiceBuffers.forEach((b) => { total += b.length; });
+                    const merged = new Float32Array(total);
+                    let off = 0;
+                    voiceBuffers.forEach((b) => { merged.set(b, off); off += b.length; });
+                    voiceBuffers = [];
+                    const resampled = resampleFloat32(merged, rateIn, 16000);
+                    if (resampled.length < 1600) {
+                        isVoicePending.value = false;
+                        alert('录音太短，请多录几秒再试。');
+                        return;
+                    }
+                    const wavBuf = encodeWavBuffer(resampled, 16000);
+                    const blob = new Blob([wavBuf], { type: 'audio/wav' });
+                    const fd = new FormData();
+                    fd.append('audio', blob, 'speech.wav');
+                    try {
+                        const res = await fetch(`${baseUrl}/speech/asr`, { method: 'POST', body: fd });
+                        const data = await res.json();
+                        if (data.code === 200 && data.data && data.data.text) {
+                            const t = data.data.text.trim();
+                            chatInput.value = chatInput.value ? (chatInput.value + ' ' + t) : t;
+                        } else {
+                            alert(data.msg || '语音识别失败');
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('语音识别请求失败：' + (e.message || e));
+                    } finally {
+                        isVoicePending.value = false;
+                    }
+                };
+
                 const sendChat = async () => {
                     if(!chatInput.value.trim() || isChatLoading.value) return;
 
@@ -844,6 +977,10 @@
                     formData.append('file', selectedFile.value);
                     const res = await fetch(`${baseUrl}/ocr`, { method: 'POST', body: formData });
                     const data = await res.json();
+                    if (data.code !== 200) {
+                        alert(data.msg || 'OCR 识别失败');
+                        return;
+                    }
                     ocrResult.value = data.data;
                 };
 
@@ -925,6 +1062,9 @@
                     isChatLoading,
                     chatInput,
                     chatHistory,
+                    isRecordingVoice,
+                    isVoicePending,
+                    toggleVoiceRecording,
                     sendChat,
                     searchKeyword,
                     searchCategory,

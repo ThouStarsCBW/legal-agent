@@ -8,7 +8,9 @@ load_dotenv()
 
 # 阿里云百炼API 配置
 API_KEY = os.getenv("API_KEY")
-BASE_URL = "https://coding.dashscope.aliyuncs.com/v1"
+# 标准百炼 OpenAI 兼容接口（控制台申请的 API Key 用此地址）
+# 若使用 Coding 等专用环境，可改为 https://coding.dashscope.aliyuncs.com/v1
+BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 DEFAULT_MODEL = "qwen3.5-plus"
 
 # 初始化 OpenAI 客户端（兼容阿里云百炼）

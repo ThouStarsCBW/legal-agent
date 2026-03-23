@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>注册 — 智慧法律助手</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="auth.js"></script>
+  <style>
+    :root {
+      --bg: #000b2b;
+      --neon: #00a2ff;
+      --cyan: #00ffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans SC", sans-serif;
+      background: radial-gradient(ellipse 100% 80% at 50% -20%, #0a2860 0%, var(--bg) 45%, #00051a 100%);
+      color: #e8f4ff;
+    }
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(0, 162, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 162, 255, 0.04) 1px, transparent 1px);
+      background-size: 56px 56px;
+      z-index: 0;
+    }
+    .wrap {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .logo-mark {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 1rem;
+      border: 2px solid var(--neon);
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(0, 162, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-mark::before {
+      content: "";
+      width: 12px;
+      height: 12px;
+      background: var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--cyan);
+    }
+    h1 {
+      text-align: center;
+      font-family: "Orbitron", "Noto Sans SC", sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: 0.1em;
+      margin: 0 0 0.35rem;
+      text-shadow: 0 0 24px rgba(0, 162, 255, 0.5);
+    }
+    .sub {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #6a9fd4;
+      margin-bottom: 1.5rem;
+    }
+    .hud {
+      width: 100%;
+      max-width: 420px;
+      padding: 2rem;
+      background: rgba(0, 20, 55, 0.75);
+      border: 1px solid rgba(0, 162, 255, 0.45);
+      clip-path: polygon(
+        12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px),
+        calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px
+      );
+      box-shadow: 0 0 40px rgba(0, 100, 200, 0.25);
+      backdrop-filter: blur(12px);
+    }
+    .field {
+      display: flex;
+      align-items: stretch;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(0, 162, 255, 0.35);
+      background: rgba(0, 15, 45, 0.85);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .field:focus-within {
+      border-color: var(--cyan);
+      box-shadow: 0 0 14px rgba(0, 255, 255, 0.15);
+    }
+    .field-icon {
+      width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon);
+      border-right: 1px solid rgba(0, 162, 255, 0.25);
+    }
+    .field input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #e8f4ff;
+      padding: 0.85rem 1rem;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .field input::placeholder {
+      color: #5a7aa0;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.95rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      background: linear-gradient(180deg, #00a2ff 0%, #0070c0 100%);
+      box-shadow: 0 4px 24px rgba(0, 162, 255, 0.45);
+      margin-top: 0.5rem;
+    }
+    .btn:hover {
+      box-shadow: 0 6px 28px rgba(0, 200, 255, 0.55);
+    }
+    .link {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: 0.88rem;
+      color: #6a9fd4;
+    }
+    .link a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+    .err {
+      color: #ff6688;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+      min-height: 1.25rem;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: #5a7aa0;
+      margin-top: -0.5rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="wrap">
+    <div class="hud">
+      <div class="logo-mark"></div>
+      <h1>注册账号</h1>
+      <p class="sub">智慧法律助手 · 新用户登记</p>
+      <div id="err" class="err"></div>
+      <form id="form">
+        <div class="field">
+          <span class="field-icon">👤</span>
+          <input type="text" id="username" placeholder="用户名（3～50 位字母数字下划线）" autocomplete="username" />
+        </div>
+        <div class="field">
+          <span class="field-icon">🔒</span>
+          <input type="password" id="password" placeholder="密码（至少 6 位）" autocomplete="new-password" />
+        </div>
+        <div class="field">
+          <span class="field-icon">🔁</span>
+          <input type="password" id="password2" placeholder="确认密码" autocomplete="new-password" />
+        </div>
+        <p class="hint">注册成功后请返回登录页登录。</p>
+        <button type="submit" class="btn">注册</button>
+      </form>
+      <p class="link">已有账号？<a href="login.html">返回登录</a></p>
+    </div>
+  </div>
+  <script>
+    document.getElementById("form").onsubmit = async function (e) {
+      e.preventDefault();
+      document.getElementById("err").textContent = "";
+      var u = document.getElementById("username").value.trim();
+      var p = document.getElementById("password").value;
+      var p2 = document.getElementById("password2").value;
+      if (p !== p2) {
+        document.getElementById("err").textContent = "两次密码不一致";
+        return;
+      }
+      try {
+        var res = await fetch("http://127.0.0.1:5000/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: u, password: p }),
+        });
+        var data = await res.json();
+        if (data.code !== 200) {
+          document.getElementById("err").textContent = data.msg || "注册失败";
+          return;
+        }
+        alert("注册成功，请登录");
+        window.location.href = "login.html";
+      } catch (err) {
+        document.getElementById("err").textContent = "网络错误，请确认后端已启动";
+      }
+    };
+  </script>
+</body>
+</html>

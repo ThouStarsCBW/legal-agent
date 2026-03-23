@@ -1,0 +1,187 @@
+/* 赛博调度 / HUD 风格 — 覆盖原智慧法律助手浅色主题 */
+body.cyber-app {
+  --cyber-bg-deep: #000b2b;
+  --cyber-bg-panel: rgba(0, 20, 60, 0.72);
+  --cyber-neon: #00a2ff;
+  --cyber-cyan: #00ffff;
+  --cyber-text: #e8f4ff;
+  --cyber-muted: #7a9cc4;
+  --cyber-border: rgba(0, 162, 255, 0.45);
+  --cyber-glow: 0 0 18px rgba(0, 162, 255, 0.35);
+  background: radial-gradient(ellipse 120% 80% at 50% 0%, #0a1f4a 0%, var(--cyber-bg-deep) 55%, #00051a 100%) fixed !important;
+  color: var(--cyber-text) !important;
+  min-height: 100vh;
+}
+
+body.cyber-app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 162, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 162, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  z-index: 0;
+}
+
+body.cyber-app > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.cyber-app .sidebar {
+  background: linear-gradient(180deg, rgba(0, 30, 80, 0.95) 0%, rgba(0, 15, 45, 0.98) 100%) !important;
+  border-right: 1px solid var(--cyber-border) !important;
+  box-shadow: 4px 0 32px rgba(0, 0, 0, 0.45), var(--cyber-glow) !important;
+}
+
+body.cyber-app .sidebar-btn:hover {
+  background: rgba(0, 162, 255, 0.12) !important;
+  border-left-color: var(--cyber-neon) !important;
+}
+
+body.cyber-app .sidebar-btn.active {
+  background: rgba(0, 162, 255, 0.2) !important;
+  border-left-color: var(--cyber-cyan) !important;
+  color: #fff !important;
+}
+
+body.cyber-app .card {
+  background: var(--cyber-bg-panel) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--cyber-border) !important;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 255, 255, 0.06) !important;
+  color: var(--cyber-text);
+}
+
+body.cyber-app .btn-primary {
+  background: linear-gradient(135deg, #0088dd 0%, #00a2ff 50%, #0066aa 100%) !important;
+  box-shadow: 0 4px 24px rgba(0, 162, 255, 0.45) !important;
+  border: 1px solid rgba(0, 255, 255, 0.25) !important;
+}
+
+body.cyber-app .btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(0, 200, 255, 0.55) !important;
+}
+
+body.cyber-app .btn-secondary {
+  background: linear-gradient(135deg, #004466 0%, #006699 100%) !important;
+}
+
+body.cyber-app .input-field {
+  background: rgba(0, 25, 60, 0.65) !important;
+  border: 1px solid var(--cyber-border) !important;
+  color: var(--cyber-text) !important;
+}
+
+body.cyber-app .input-field::placeholder {
+  color: var(--cyber-muted) !important;
+}
+
+body.cyber-app .input-field:focus {
+  border-color: var(--cyber-cyan) !important;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.15) !important;
+}
+
+body.cyber-app .section-title {
+  background: linear-gradient(90deg, #00d4ff 0%, #00a2ff 50%, #66ccff 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+body.cyber-app .message-user {
+  background: linear-gradient(135deg, rgba(0, 130, 200, 0.9) 0%, rgba(0, 80, 140, 0.95) 100%) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+body.cyber-app .message-ai {
+  background: rgba(0, 25, 55, 0.85) !important;
+  border: 1px solid var(--cyber-border) !important;
+  color: var(--cyber-text) !important;
+}
+
+body.cyber-app .legal-icon {
+  background: linear-gradient(135deg, rgba(0, 162, 255, 0.15) 0%, rgba(0, 100, 180, 0.1) 100%) !important;
+  border: 1px solid var(--cyber-border) !important;
+}
+
+body.cyber-app .divider-legal {
+  background: linear-gradient(90deg, transparent 0%, var(--cyber-neon) 50%, transparent 100%) !important;
+  opacity: 0.7;
+}
+
+body.cyber-app .scroll-area::-webkit-scrollbar-track {
+  background: rgba(0, 40, 80, 0.3) !important;
+}
+
+body.cyber-app .scroll-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--cyber-neon) 0%, #004488 100%) !important;
+}
+
+body.cyber-app .result-card {
+  background: rgba(0, 30, 70, 0.75) !important;
+  border-left: 4px solid var(--cyber-neon) !important;
+  border: 1px solid var(--cyber-border);
+  color: var(--cyber-text);
+}
+
+body.cyber-app .doc-card {
+  background: rgba(0, 30, 70, 0.75) !important;
+  border-left: 4px solid var(--cyber-neon) !important;
+  color: var(--cyber-text) !important;
+}
+
+body.cyber-app .highlight {
+  background-color: rgba(255, 220, 0, 0.35) !important;
+  color: #fff !important;
+}
+
+/* Tailwind 文本色覆盖（主内容区） */
+body.cyber-app .text-\[\#2D2B55\],
+body.cyber-app .text-\[\#5A5880\] {
+  color: var(--cyber-muted) !important;
+}
+
+body.cyber-app .text-\[\#3D4B94\] {
+  color: #88ccff !important;
+}
+
+body.cyber-app .border-\[\#D4CFE8\] {
+  border-color: var(--cyber-border) !important;
+}
+
+body.cyber-app .bg-white,
+body.cyber-app .bg-white\/90 {
+  background: rgba(0, 25, 55, 0.55) !important;
+}
+
+/* 子页面顶部条 */
+body.cyber-app .bg-gradient-to-r.from-\[\#3D4B94\] {
+  background: linear-gradient(90deg, rgba(0, 40, 90, 0.95), rgba(0, 100, 160, 0.85)) !important;
+  border-bottom: 1px solid var(--cyber-border);
+}
+
+body.cyber-app .bg-white.border-b {
+  background: rgba(0, 20, 50, 0.85) !important;
+  border-color: var(--cyber-border) !important;
+}
+
+/* 登出按钮 */
+.cyber-logout-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--cyber-cyan);
+  border: 1px solid var(--cyber-border);
+  border-radius: 0.5rem;
+  background: rgba(0, 60, 120, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cyber-logout-btn:hover {
+  box-shadow: var(--cyber-glow);
+  color: #fff;
+}

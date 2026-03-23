@@ -1,19 +1,40 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from routes.document import doc_bp
+from routes.speech import speech_bp
+from routes.auth import auth_bp
+from services.baidu_ocr_service import run_ocr_upload
 from services.llm_service import generate_response
 from services.nlu_service import NLUService
 from services.rag_service import RAGService
 from services.legal_analysis_service import LegalAnalysisService
 from services.action_guide_service import ActionGuideService
 from knowledge_base import knowledge_base
+from services.auth_service import init_db, validate_token
 import time
 import logging
 from datetime import datetime
 
 app = Flask(__name__)
-# 允许跨域
-CORS(app)
+# 跨域：前端静态页在 8080，需携带 Authorization
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://127.0.0.1:8080",
+                "http://localhost:8080",
+                "http://127.0.0.1:5500",
+                "http://localhost:5500",
+                "http://localhost:63342"
+            ],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        }
+    },
+)
+
+init_db()
 
 # 配置日志
 logging.basicConfig(
@@ -25,6 +46,28 @@ logger = logging.getLogger(__name__)
 
 # 注册拆分出的文书撰写蓝图接口
 app.register_blueprint(doc_bp)
+app.register_blueprint(speech_bp)
+app.register_blueprint(auth_bp)
+
+
+@app.before_request
+def _require_api_auth():
+    if request.method == "OPTIONS":
+        return
+    if not request.path.startswith("/api"):
+        return
+    if request.path in ("/api/auth/login", "/api/auth/register"):
+        return
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return jsonify({"code": 401, "msg": "未登录或登录已过期"}), 401
+    token = auth[7:].strip()
+    ok, info = validate_token(token)
+    if not ok:
+        return jsonify(
+            {"code": 401, "msg": info if isinstance(info, str) else "未登录"}
+        ), 401
+    g.user = info
 
 # 初始化服务
 nlu_service = NLUService()
@@ -316,14 +359,13 @@ def ocr():
     if 'file' not in request.files:
         return jsonify({"code": 400, "msg": "未上传文件"})
     file = request.files['file']
-    time.sleep(1.5)
-    return jsonify({
-        "code": 200,
-        "data": {
-            "text": f"提取到的【{file.filename}】文本内容：\n甲方：张三\n乙方：李四...",
-            "risk": "风险提示：违约金比例可能过高。"
-        }
-    })
+    raw = file.read()
+    if not raw:
+        return jsonify({"code": 400, "msg": "文件为空"})
+    ok, payload = run_ocr_upload(raw, file.filename or "")
+    if not ok:
+        return jsonify({"code": 500, "msg": payload})
+    return jsonify({"code": 200, "data": payload})
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=False)

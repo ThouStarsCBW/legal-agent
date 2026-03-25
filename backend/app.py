@@ -16,6 +16,7 @@ import logging
 from datetime import datetime
 
 app = Flask(__name__)
+# 这个是存在登录注册的首页
 # 跨域：前端静态页在 8080，需携带 Authorization
 CORS(
     app,

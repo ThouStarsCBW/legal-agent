@@ -2,7 +2,10 @@ from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from routes.document import doc_bp
 from routes.speech import speech_bp
-from routes.auth import auth_bp
+# === 登录注册功能（已禁用，合并时取消注释） ===
+# from routes.auth import auth_bp
+# from services.auth_service import init_db, validate_token
+# ==============================================
 from services.baidu_ocr_service import run_ocr_upload
 from services.llm_service import generate_response
 from services.nlu_service import NLUService
@@ -10,7 +13,6 @@ from services.rag_service import RAGService
 from services.legal_analysis_service import LegalAnalysisService
 from services.action_guide_service import ActionGuideService
 from knowledge_base import knowledge_base
-from services.auth_service import init_db, validate_token
 import time
 import logging
 from datetime import datetime
@@ -34,7 +36,9 @@ CORS(
     },
 )
 
-init_db()
+# === 登录注册功能（已禁用） ===
+# init_db()
+# ==============================
 
 # 配置日志
 logging.basicConfig(
@@ -47,27 +51,31 @@ logger = logging.getLogger(__name__)
 # 注册拆分出的文书撰写蓝图接口
 app.register_blueprint(doc_bp)
 app.register_blueprint(speech_bp)
-app.register_blueprint(auth_bp)
+# === 登录注册功能（已禁用） ===
+# app.register_blueprint(auth_bp)
+# ==============================
 
 
-@app.before_request
-def _require_api_auth():
-    if request.method == "OPTIONS":
-        return
-    if not request.path.startswith("/api"):
-        return
-    if request.path in ("/api/auth/login", "/api/auth/register"):
-        return
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        return jsonify({"code": 401, "msg": "未登录或登录已过期"}), 401
-    token = auth[7:].strip()
-    ok, info = validate_token(token)
-    if not ok:
-        return jsonify(
-            {"code": 401, "msg": info if isinstance(info, str) else "未登录"}
-        ), 401
-    g.user = info
+# === 登录注册功能（已禁用，合并时取消注释） ===
+# @app.before_request
+# def _require_api_auth():
+#     if request.method == "OPTIONS":
+#         return
+#     if not request.path.startswith("/api"):
+#         return
+#     if request.path in ("/api/auth/login", "/api/auth/register"):
+#         return
+#     auth = request.headers.get("Authorization", "")
+#     if not auth.startswith("Bearer "):
+#         return jsonify({"code": 401, "msg": "未登录或登录已过期"}), 401
+#     token = auth[7:].strip()
+#     ok, info = validate_token(token)
+#     if not ok:
+#         return jsonify(
+#             {"code": 401, "msg": info if isinstance(info, str) else "未登录"}
+#         ), 401
+#     g.user = info
+# ==================================================
 
 # 初始化服务
 nlu_service = NLUService()
